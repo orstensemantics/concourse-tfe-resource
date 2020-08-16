@@ -1,7 +1,7 @@
-#concourse-tfe-resource
+# concourse-tfe-resource
 Concourse resource for Terraform Cloud and Terraform Enterprise using [Hashicorp's go-tfe library](https://github.com/hashicorp/go-tfe).
 
-##Usage
+## Usage
 ```yaml
 resource_types:
   - name: tfe
@@ -10,7 +10,7 @@ resource_types:
       repository: rorsten/concourse-tfe-resource
 ```
 
-##Source Configuration
+## Source Configuration
 Name | Required | Description |
 ---|---|---|
 organization|Yes|The name of your Terraform organization
@@ -18,8 +18,8 @@ workspace|Yes|The name of your workspace
 token|Yes|An API token with at least read permission. With read permission, only in will work. With queue permissions, the `confirm` param will have no effect. Apply permission will allow full functionality. 
 address|No|The URL of your Terraform Enterprise instance. Defaults to https://app.terraform.io.
 
-##Behaviour
-###`in` - Retrieve a run and related information
+## Behaviour
+### `in` - Retrieve a run and related information
 
 * Get will wait for the run to enter a final state (`policy_soft_failed`,
 `planned_and_finished`, `applied`, `discarded`, `errored`, `canceled`, `force_canceled`)
@@ -30,7 +30,7 @@ Sensitive variables will be empty.
     * `./env_vars` will hold a file for each environment variable, containing the *current* value. Sensitive values will be empty.
     * `./outputs` will hold a file for each output, containing its value.
 
-###`out` - Push variables and create run
+### `out` - Push variables and create run
 
 * Any provided variables will be pushed to the workspace, and a run will be queued.
 * If the workspace is configured to auto-apply, put will return immediately. If the provided API token does not have apply permission,
@@ -40,14 +40,14 @@ wait for manual confirmation
 * If the workspace requires manual confirmation and `confirm` is true, out will wait until the run enters
 a waiting state (`planned`, `cost_estimated`, `policy_checked`), out will apply the run and return. 
 
-####Parameters
+#### Parameters
 Name|Required|Description
 ---|---|---
 vars|No|A map of workspace variables to push. See below.
 env_vars|No|A map of environment variables to push. See below.
 confirm|No|If true and the workspace requires confirmation, the run will be confirmed. Defaults to `false`
 
-####Example
+#### Example
 
 ```yaml
     - ...
