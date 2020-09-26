@@ -7,7 +7,7 @@ resource_types:
   - name: tfe
     type: docker-image
     source:
-      repository: rorsten/concourse-tfe-resource
+      repository: orstensemantics/concourse-tfe-resource
 ```
 
 ## Source Configuration

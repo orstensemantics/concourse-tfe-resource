@@ -33,12 +33,12 @@ func in(input inputJSON, outputDir string) (string, error) {
 	for _, v := range output.Metadata {
 		metadataMap[v.Name] = v.Value
 	}
-	metadataJson, err := json.Marshal(metadataMap)
+	metadataJSON, err := json.Marshal(metadataMap)
 	if err != nil {
 		return "", formatError(err, "marshaling metadata json")
 	}
 
-	if err = writeAndClose(fmt.Sprintf("%s%smetadata.json", outputDir, string(os.PathSeparator)), metadataJson);
+	if err = writeAndClose(fmt.Sprintf("%s%smetadata.json", outputDir, string(os.PathSeparator)), metadataJSON);
 		err != nil {
 		return "", formatError(err, "writing metadata json")
 	}
@@ -46,9 +46,7 @@ func in(input inputJSON, outputDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if run.Status == tfe.RunApplied {
-		err = writeOutputs(outputDir, input.Params.Sensitive)
-	}
+	err = writeOutputs(outputDir, input.Params.Sensitive)
 
 	out, _ := json.Marshal(output)
 	return string(out), err
