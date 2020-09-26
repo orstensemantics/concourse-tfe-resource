@@ -1,33 +1,58 @@
 package main
 
 import (
-	"concourse-tfe-resource/common"
+	"context"
 	"fmt"
 	"github.com/hashicorp/go-tfe"
+	"log"
 	"os"
 	"path"
 )
 
-func initialize() (common.InputJSON, *tfe.Client, string) {
-	input := common.GetInputs()
-	common.ValidateSource(input)
+var client *tfe.Client
+var workspace *tfe.Workspace
 
-	client := common.GetClient(input)
-	workspace := common.GetWorkspaceId(input.Source["organization"], input.Source["workspace"], client)
+func startup(input inputJSON) error {
+	config := &tfe.Config{
+		Token:   input.Source.Token,
+		Address: input.Source.Address,
+	}
+	var err error
+	client, err = tfe.NewClient(config)
+	if err != nil {
+		return formatError(err, "creating tfe client")
+	}
 
-	return input, client, workspace
+	workspace, err = client.Workspaces.Read(context.Background(),
+		input.Source.Organization,
+		input.Source.Workspace)
+	if err != nil {
+		return formatError(err, "getting workspace")
+	}
+	return nil
 }
 
 func main() {
 	var output string
-	input, client, workspace := initialize()
+	input, err := getInputs(os.Stdin)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = startup(input)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	switch path.Base(os.Args[0]) {
 	case "check":
-		output = check(input, client, workspace)
+		output, err = check(input)
 	case "in":
-		output = in(input, client, workspace)
+		output, err = in(input, os.Args[1])
 	case "out":
-		output = out(input, client, workspace)
+		output, err = out(input)
+	}
+	if err != nil {
+		log.Fatal(err)
 	}
 	fmt.Print(output)
 }

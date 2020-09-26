@@ -1,46 +1,31 @@
 package main
 
 import (
-	"concourse-tfe-resource/common"
-	mock_go_tfe "concourse-tfe-resource/mock_go_tfe"
 	"encoding/json"
+	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-tfe"
 	"strconv"
 	"testing"
 )
 
-func setup(t *testing.T) (
-	ctrl *gomock.Controller,
-	client tfe.Client,
-	mockruns *mock_go_tfe.MockRuns,
-	result common.CheckOutputJSON) {
-	ctrl = gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client = tfe.Client{}
-	mockruns = mock_go_tfe.NewMockRuns(ctrl)
-	client.Runs = mockruns
-
-	result = common.CheckOutputJSON{}
-	return
-}
-
 func runList(start int, len int) (list tfe.RunList) {
-	for i := 0; i < len; i += 1 {
+	for i := 0; i < len; i++ {
 		list.Items = append(list.Items, &tfe.Run{ID: strconv.Itoa(i + start)})
 	}
 	return
 }
 
 func TestCheckWithNilVersion(t *testing.T) {
-	_, client, mockruns, result := setup(t)
+	setup(t)
+	result := checkOutputJSON{}
 
-	no_version_call := runList(0, 5)
+	firstCall := runList(0, 5)
+	input := inputJSON{Source: sourceJSON{Workspace: "foo"}}
 
-	mockruns.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Any()).Return(&no_version_call, nil)
+	runs.EXPECT().List(gomock.Any(), gomock.Eq(workspace.ID), gomock.Any()).Return(&firstCall, nil)
 
-	output := check(common.InputJSON{}, &client, "foo")
+	output, _ := check(input)
 
 	json.Unmarshal([]byte(output), &result)
 
@@ -52,12 +37,15 @@ func TestCheckWithNilVersion(t *testing.T) {
 }
 
 func TestCheckWithExistingVersion(t *testing.T) {
-	_, client, mockruns, result := setup(t)
-
-	no_version_call := runList(0, 5)
-
-	mockruns.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Any()).Return(&no_version_call, nil)
-	output := check(common.InputJSON{Version: common.Version{Ref: "2"}}, &client, "foo")
+	setup(t)
+	result := checkOutputJSON{}
+	
+	firstCall := runList(0, 5)
+	input := inputJSON{Source: sourceJSON{Workspace: "foo"}}
+	
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Any()).Return(&firstCall, nil)
+	input.Version.Ref = "2"
+	output, _ := check(input)
 
 	json.Unmarshal([]byte(output), &result)
 
@@ -69,16 +57,19 @@ func TestCheckWithExistingVersion(t *testing.T) {
 }
 
 func TestCheckWithVersionOnSecondPage(t *testing.T) {
-	_, client, mockruns, result := setup(t)
+	setup(t)
+	result := checkOutputJSON{}
 
-	no_version_call := runList(0, 5)
-	second_call := runList(5, 5)
+	firstCall := runList(0, 5)
+	secondCall := runList(5, 5)
+	input := inputJSON{Source: sourceJSON{Workspace: "foo"}}
 
 	rlo1 := tfe.RunListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 0}}
 	rlo2 := tfe.RunListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 1}}
-	mockruns.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo1)).Return(&no_version_call, nil)
-	mockruns.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo2)).Return(&second_call, nil)
-	output := check(common.InputJSON{Version: common.Version{Ref: "8"}}, &client, "foo")
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo1)).Return(&firstCall, nil)
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo2)).Return(&secondCall, nil)
+	input.Version.Ref = "8"
+	output, _ := check(input)
 
 	json.Unmarshal([]byte(output), &result)
 	if len(result) != 9 {
@@ -89,16 +80,19 @@ func TestCheckWithVersionOnSecondPage(t *testing.T) {
 }
 
 func TestCheckWithNonexistentVersion(t *testing.T) {
-	_, client, mockruns, result := setup(t)
+	setup(t)
+	result := checkOutputJSON{}
 
-	no_version_call := runList(0, 5)
+	firstCall := runList(0, 5)
+	input := inputJSON{Source: sourceJSON{Workspace: "foo"}}
 
 	// if the provided version does not seem to exist, return the current version
 	rlo1 := tfe.RunListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 0}}
 	rlo2 := tfe.RunListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 1}}
-	mockruns.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo1)).Return(&no_version_call, nil)
-	mockruns.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo2)).Return(&tfe.RunList{}, nil)
-	output := check(common.InputJSON{Version: common.Version{Ref: "8"}}, &client, "foo")
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo1)).Return(&firstCall, nil)
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo2)).Return(&tfe.RunList{}, nil)
+	input.Version.Ref = "8"
+	output, _ := check(input)
 
 	json.Unmarshal([]byte(output), &result)
 
@@ -106,5 +100,21 @@ func TestCheckWithNonexistentVersion(t *testing.T) {
 		t.Errorf("check with non-present version returned %d elements", len(result))
 	} else if result[0].Ref != "0" {
 		t.Errorf("check with non-present version didn't return the first result")
+	}
+}
+
+func TestCheckWithFailingListCall(t *testing.T) {
+	setup(t)
+	result := checkOutputJSON{}
+
+	firstCall := runList(0, 5)
+	input := inputJSON{Source: sourceJSON{Workspace: "foo"}}
+
+	rlo1 := tfe.RunListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 0}}
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo1)).Return(&firstCall, errors.New("NO"))
+	output, err := check(input)
+
+	if output != "" || err == nil || err.Error() != "error listing runs: NO" {
+		t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 	}
 }

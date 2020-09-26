@@ -1,18 +1,16 @@
 package main
 
 import (
-	"concourse-tfe-resource/common"
 	"context"
 	"encoding/json"
 	"github.com/hashicorp/go-tfe"
-	"log"
 )
 
-func check(input common.InputJSON, client *tfe.Client, workspace string) string {
+func check(input inputJSON) (string, error) {
 	var (
 		page  int  = 0
 		found bool = false
-		list       = common.CheckOutputJSON{}
+		list       = checkOutputJSON{}
 	)
 
 	rlo := tfe.RunListOptions{
@@ -21,12 +19,13 @@ func check(input common.InputJSON, client *tfe.Client, workspace string) string 
 
 	for {
 		rlo.PageNumber = page
-		runs, err := client.Runs.List(context.Background(), workspace, rlo)
+		runs, err := client.Runs.List(context.Background(), workspace.ID, rlo)
 		if err != nil {
-			log.Fatalf("Error listing runs: %s", err)
+			return "", formatError(err, "listing runs")
 		}
+
 		for _, v := range runs.Items {
-			list = append(list, common.Version{Ref: v.ID})
+			list = append(list, version{Ref: v.ID})
 			if v.ID == input.Version.Ref || input.Version.Ref == "" {
 				found = true
 				break
@@ -35,17 +34,16 @@ func check(input common.InputJSON, client *tfe.Client, workspace string) string 
 		if found || len(runs.Items) == 0 {
 			break
 		} else {
-			page += 1
+			page++
 		}
 	}
 
 	if !found && len(list) > 0 {
 		// "if your resource is unable to determine which versions are newer than the given version, then the
 		// current version of your resource should be returned"
-		list = common.CheckOutputJSON{list[0]}
+		list = checkOutputJSON{list[0]}
 	}
 
-	output, _ :=  json.MarshalIndent(list, "", " ")
-	return string(output)
+	output, _ := json.Marshal(list)
+	return string(output), nil
 }
-

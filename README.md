@@ -15,7 +15,7 @@ Name | Required | Description |
 ---|---|---|
 organization|Yes|The name of your Terraform organization
 workspace|Yes|The name of your workspace
-token|Yes|An API token with at least read permission. With read permission, only in will work. With queue permissions, the `confirm` param will have no effect. Apply permission will allow full functionality. 
+token|Yes|An API token with at least read permission. With read permission, only in and check will work. With queue permissions, the `confirm` param will have no effect. Apply permission will allow full functionality. 
 address|No|The URL of your Terraform Enterprise instance. Defaults to https://app.terraform.io.
 
 ## Behaviour
@@ -23,12 +23,25 @@ address|No|The URL of your Terraform Enterprise instance. Defaults to https://ap
 
 * Get will wait for the run to enter a final state (`policy_soft_failed`,
 `planned_and_finished`, `applied`, `discarded`, `errored`, `canceled`, `force_canceled`)
+* Get will *not* fail based on the final state of the run. 
 * Workspace variables, environment variables and state outputs will be retrieved:
     * **IMPORTANT** - the values returned will be the current ones, even if the provided run ID is not the latest.
-    * `./vars` will hold a file for each workspace variable, containing the *current* value of the variable. 
-Sensitive variables will be empty.
-    * `./env_vars` will hold a file for each environment variable, containing the *current* value. Sensitive values will be empty.
-    * `./outputs` will hold a file for each output, containing its value.
+    * `./vars` will hold a file for each workspace variable, containing the *current* value of the variable. HCL
+     variables will be in `.vars/hcl`. Sensitive variables will be empty.
+    * `./env_vars` will hold a file for each environment variable, containing the *current* value. Sensitive values
+     will be empty.
+    * `./outputs.json` will be a JSON file of all of the root level outputs of the *current* workspace state. Sensitive
+     values will be empty strings unless the `sensitive` param is true. Suitable for load_var/set_pipeline steps.
+    * `./outputs` will hold a file for each root level output of the *current* workspace state. Sensitive values will be
+    empty files unless the `sensitive` param is true. Since outputs can be complex values, the contents of the file are
+    JSON, so simple string outputs are quoted.
+    * `./metadata.json` will contain the same metadata values visible in the resource version.
+
+#### Parameters
+Name|Required|Description|Default
+---|---|---|---|
+polling_period|No|How many seconds to wait between API calls while waiting for runs to reach final states when getting a run.|5
+sensitive|No|Whether to include values for sensitive outputs.
 
 ### `out` - Push variables and create run
 
@@ -55,14 +68,19 @@ confirm|No|If true and the workspace requires confirmation, the run will be conf
       params:
         vars:
           my_workspace_var:
-            value: a value
+            # if you specify value *and* file, value will take precedence
+            value: a value # you can specify a value directly
+            file: someoutput/filename # or you can reference a file containing the value
             description: a description # optional 
             sensitive: true # optional, default is false
             hcl: true # optional, default is false
         env_vars:
           MY_ENV_VAR:
             value: a value
+            file: someoutput/filename
             description: a description # optional 
             sensitive: true # optional, default is false
         confirm: true # optional, default is false, see above
+        message: Name of Build in Terraform Cloud # optional
+        # default message is "Queued by {pipeline_name}/{job_name} ({build_number})" 
 ```
