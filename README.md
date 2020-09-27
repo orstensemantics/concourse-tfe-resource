@@ -23,7 +23,7 @@ address|No|The URL of your Terraform Enterprise instance. Defaults to https://ap
 
 * Get will wait for the run to enter a final state (`policy_soft_failed`,
 `planned_and_finished`, `applied`, `discarded`, `errored`, `canceled`, `force_canceled`)
-* Get will *not* fail based on the final state of the run. If you need respond to the final state, this will exit with
+* Get will *not* fail based on the final state of the run. If you need to respond to the final state, this will exit with
 a non-zero status if the run didn't end with a successful apply or a plan with no changes:
  ```shell script
  $ cat your_run/metadata.json | jq -e '.final_status | IN(["applied","planned_and_finished"], .)'

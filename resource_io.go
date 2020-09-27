@@ -16,7 +16,7 @@ type (
 		Workspace     string `json:"workspace"`
 		Organization  string `json:"organization"`
 		Token         string `json:"token"`
-		Address       string `json:"address""`
+		Address       string `json:"address"`
 	}
 	inputJSON struct {
 		Params  paramsJSON `json:"params"`
