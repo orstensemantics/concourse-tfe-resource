@@ -83,10 +83,10 @@ func TestIn(t *testing.T) {
 		stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, nil)
 		stateVersions.EXPECT().Download(gomock.Any(), "downloadurl").Return(version2State, nil)
 
-		outputDir := fmt.Sprintf("%s/%s", wd, "testInV2NoParams")
-		os.MkdirAll(outputDir, os.FileMode(0755))
+		workingDirectory = fmt.Sprintf("%s/%s", wd, "testInV2NoParams")
+		os.MkdirAll(workingDirectory, os.FileMode(0755))
 
-		output, err := in(input, outputDir)
+		output, err := in(input)
 		if err != nil {
 			t.Error(err)
 		}
@@ -96,20 +96,20 @@ func TestIn(t *testing.T) {
 		for _, v := range vars.Items {
 			var fileName string
 			if v.Category == tfe.CategoryEnv {
-				fileName = fmt.Sprintf("%s/env_vars/%s", outputDir, v.Key)
+				fileName = fmt.Sprintf("%s/env_vars/%s", workingDirectory, v.Key)
 			} else if v.HCL {
-				fileName = fmt.Sprintf("%s/vars/hcl/%s", outputDir, v.Key)
+				fileName = fmt.Sprintf("%s/vars/hcl/%s", workingDirectory, v.Key)
 			} else {
-				fileName = fmt.Sprintf("%s/vars/%s", outputDir, v.Key)
+				fileName = fmt.Sprintf("%s/vars/%s", workingDirectory, v.Key)
 			}
 			validateFileContents(t, fileName, v.Value)
 
 		}
 		// non-sensitive var should have its value
-		validateFileContents(t, fmt.Sprintf("%s/outputs/foo", outputDir), "\"foo\"")
+		validateFileContents(t, fmt.Sprintf("%s/outputs/foo", workingDirectory), "\"foo\"")
 		// sensitive var should be empty
-		validateFileContents(t, fmt.Sprintf("%s/outputs/bar", outputDir), "")
-		if _, err := os.Stat(fmt.Sprintf("%s/outputs.json", outputDir)); os.IsNotExist(err) {
+		validateFileContents(t, fmt.Sprintf("%s/outputs/bar", workingDirectory), "")
+		if _, err := os.Stat(fmt.Sprintf("%s/outputs.json", workingDirectory)); os.IsNotExist(err) {
 			t.Error("output json file doesn't exist/is in the wrong place")
 		}
 	})
@@ -120,22 +120,22 @@ func TestIn(t *testing.T) {
 		stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, nil)
 		stateVersions.EXPECT().Download(gomock.Any(), "downloadurl").Return(version4State, nil)
 
-		outputDir := fmt.Sprintf("%s/%s", wd, "testInV4Sensitive")
-		os.MkdirAll(outputDir, os.FileMode(0755))
-
+		workingDirectory = fmt.Sprintf("%s/%s", wd, "testInV4Sensitive")
+		os.MkdirAll(workingDirectory, os.FileMode(0755))
+		
 		input.Params.Sensitive = true
-		_, err := in(input, outputDir)
+		_, err := in(input)
 		if err != nil {
 			t.Error(err)
 		}
 
-		validateFileContents(t, fmt.Sprintf("%s/outputs/bar", outputDir), "\"secretbar\"")
+		validateFileContents(t, fmt.Sprintf("%s/outputs/bar", workingDirectory), "\"secretbar\"")
 	})
 	t.Run("error retrieving run", func(t *testing.T) {
 		setup(t)
 		runs.EXPECT().Read(gomock.Any(), gomock.Any()).Return(&run, fmt.Errorf("foo"))
 
-		_, err := in(input, "shouldntCreate")
+		_, err := in(input)
 		if err.Error() != "error retrieving run: foo" {
 			t.Errorf("unexpected error: %s", err)
 		}

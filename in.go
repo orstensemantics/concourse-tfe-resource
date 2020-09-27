@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func in(input inputJSON, outputDir string) (string, error) {
+func in(input inputJSON) (string, error) {
 	var run *tfe.Run
 	var err error
 	for {
@@ -38,22 +38,22 @@ func in(input inputJSON, outputDir string) (string, error) {
 		return "", formatError(err, "marshaling metadata json")
 	}
 
-	if err = writeAndClose(fmt.Sprintf("%s%smetadata.json", outputDir, string(os.PathSeparator)), metadataJSON);
+	if err = writeAndClose(fmt.Sprintf("%s%smetadata.json", workingDirectory, string(os.PathSeparator)), metadataJSON);
 		err != nil {
 		return "", formatError(err, "writing metadata json")
 	}
-	err = writeVariables(outputDir)
-	if err != nil {
+	if err = writeVariables(); err != nil {
 		return "", err
 	}
-	err = writeOutputs(outputDir, input.Params.Sensitive)
+
+	err = writeOutputs(input.Params.Sensitive)
 
 	out, _ := json.Marshal(output)
 	return string(out), err
 }
 
-func writeOutputs(dir string, sensitive bool) error {
-	outputDir := fmt.Sprintf("%s%soutputs", dir, string(os.PathSeparator))
+func writeOutputs(sensitive bool) error {
+	outputDir := fmt.Sprintf("%s%soutputs", workingDirectory, string(os.PathSeparator))
 	if err := os.MkdirAll(outputDir, os.FileMode(0777)); err != nil {
 		return formatError(err, "creating run output directory")
 	}
@@ -86,15 +86,15 @@ func writeOutputs(dir string, sensitive bool) error {
 	if err != nil {
 		return formatError(err, "marshaling output json")
 	}
-	return writeAndClose(fmt.Sprintf("%s%soutputs.json", dir, string(os.PathSeparator)), jsonOutFile)
+	return writeAndClose(fmt.Sprintf("%s%soutputs.json", workingDirectory, string(os.PathSeparator)), jsonOutFile)
 }
 
-func writeVariables(outputDir string) error {
+func writeVariables() error {
 	var (
 		vars       tfe.VariableList
 		err        error
-		varsDir    = fmt.Sprintf("%s%s%s", outputDir, string(os.PathSeparator), "vars")
-		envVarsDir = fmt.Sprintf("%s%s%s", outputDir, string(os.PathSeparator), "env_vars")
+		varsDir    = fmt.Sprintf("%s%s%s", workingDirectory, string(os.PathSeparator), "vars")
+		envVarsDir = fmt.Sprintf("%s%s%s", workingDirectory, string(os.PathSeparator), "env_vars")
 		hclVarsDir = fmt.Sprintf("%s%s%s", varsDir, string(os.PathSeparator), "hcl")
 	)
 	vars, err = getVariableList(client, workspace)

@@ -103,7 +103,8 @@ func getValue(v variableJSON, name string) (string, error) {
 	if v.Value != "" {
 		value = v.Value
 	} else if v.File != "" {
-		f, err := os.Open(v.File)
+		fileName := fmt.Sprintf("%s%s%s", workingDirectory, string(os.PathSeparator), v.File)
+		f, err := os.Open(fileName)
 		if err != nil {
 			return "", formatError(err, fmt.Sprintf("getting value for variable \"%s\"", name))
 		}
