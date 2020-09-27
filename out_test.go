@@ -137,7 +137,7 @@ func TestOutErrorConditions(t *testing.T) {
 
 		result, err := out(input)
 		if result != "" || err == nil ||
-			err.Error() != "error getting value for variable \"gloom\": open /no/way/this/exists: no such file or directory" {
+			!strings.Contains(err.Error(), "error getting value for variable \"gloom\":") {
 			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
 	})

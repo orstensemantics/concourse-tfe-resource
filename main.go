@@ -11,6 +11,7 @@ import (
 
 var client *tfe.Client
 var workspace *tfe.Workspace
+var workingDirectory string
 
 func startup(input inputJSON) error {
 	config := &tfe.Config{
@@ -34,6 +35,7 @@ func startup(input inputJSON) error {
 
 func main() {
 	var output string
+	workingDirectory = os.Args[1]
 	input, err := getInputs(os.Stdin)
 	if err != nil {
 		log.Fatal(err)
@@ -47,7 +49,7 @@ func main() {
 	case "check":
 		output, err = check(input)
 	case "in":
-		output, err = in(input, os.Args[1])
+		output, err = in(input)
 	case "out":
 		output, err = out(input)
 	}
