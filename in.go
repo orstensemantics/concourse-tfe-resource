@@ -27,7 +27,7 @@ func in(input inputJSON) (string, error) {
 	}
 
 	output := inOutputJSON{Version: version{Ref: input.Version.Ref}}
-	output.Metadata = runMetadata(run)
+	output.Metadata = runMetadata(input, run)
 
 	metadataMap := make(map[string]string)
 	for _, v := range output.Metadata {

@@ -68,6 +68,9 @@ func getStateV2Outputs(stateFile []byte) (map[string]outputStateV4, error) {
 		return nil, formatError(err, "decoding v2 state file")
 	}
 
+	if len(state.Modules) < 1 {
+		return nil, fmt.Errorf("error decoding v2 state: no root module")
+	}
 	// in v2/v3 state, Modules is a breadth-first array, so 0 is the root module
 	return state.Modules[0].Outputs, nil
 }

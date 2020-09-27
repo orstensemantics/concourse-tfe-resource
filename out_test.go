@@ -2,8 +2,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-tfe"
+	"os"
 	"strings"
 	"testing"
 )
@@ -67,12 +69,12 @@ func TestOutVars(t *testing.T) {
 	runs.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&tfe.Run{ID: "bar", Status: tfe.RunPending}, nil)
 	variables.EXPECT().List(gomock.Any(), "foo", gomock.Any()).Return(&vlist, nil)
 	variables.EXPECT().Create(gomock.Any(), "foo", gomock.Any()).Times(2).DoAndReturn(
-		func (_ interface{}, _ string, v tfe.VariableCreateOptions) (*tfe.Variable, error) {
+		func(_ interface{}, _ string, v tfe.VariableCreateOptions) (*tfe.Variable, error) {
 			if *v.Key == "NEW_ENV_VAR" && !strings.Contains(*v.Value, "coverage.html") {
 				t.Error("file value not set properly")
 			}
 			return &tfe.Variable{ID: "var-345"}, nil
-	})
+		})
 	variables.EXPECT().Update(gomock.Any(), "foo", gomock.Any(), gomock.Any()).Times(2).Return(&tfe.Variable{ID: "var-345"}, nil)
 
 	out(input)
@@ -141,6 +143,29 @@ func TestOutErrorConditions(t *testing.T) {
 			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
 	})
+	t.Run("variable with a usable file value", func(t *testing.T) {
+		setup(t)
+		workingDirectory, _ = os.Getwd()
+		fileName := fmt.Sprintf("%s%sreadable-test-file", workingDirectory, string(os.PathSeparator))
+		f, err := os.OpenFile(fileName, os.O_CREATE | os.O_RDWR, os.FileMode(0755))
+		_, _ = f.Write([]byte("athinger"))
+		_ = f.Close()
+		badVars := make(map[string]variableJSON)
+		badVars["gloom"] = variableJSON{
+			File: "readable-test-file",
+		}
+		input.Params.Vars = vars
+		input.Params.EnvVars = badVars
+
+		variables.EXPECT().List(gomock.Any(), "foo", gomock.Any()).Return(&vlist, nil)
+		variables.EXPECT().Create(gomock.Any(), "foo", gomock.Any()).Times(1).Return(&tfe.Variable{ID: "var-345"}, nil)
+		runs.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&tfe.Run{ID: "bar", Status: tfe.RunPending}, nil)
+
+		result, err := out(input)
+		if result == "" || err != nil {
+			t.Errorf("unexpected failure:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
+		}
+	})
 	t.Run("creating workspace variable fails", func(t *testing.T) {
 		setup(t)
 		vars := make(map[string]variableJSON)
@@ -157,6 +182,25 @@ func TestOutErrorConditions(t *testing.T) {
 
 		result, err := out(input)
 		if result != "" || err == nil || err.Error() != "error creating variable \"new_var\": NO" {
+			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
+		}
+	})
+	t.Run("creating workspace environment variable fails", func(t *testing.T) {
+		setup(t)
+		envVars := make(map[string]variableJSON)
+		envVars["NEW_ENV_VAR"] = variableJSON{
+			Value:       "baz",
+			Description: "a description",
+		}
+		input.Params.Vars = vars
+		input.Params.EnvVars = envVars
+
+		variables.EXPECT().List(gomock.Any(), "foo", gomock.Any()).Return(&vlist, nil)
+		variables.EXPECT().Create(gomock.Any(), "foo", gomock.Any()).Times(1).Return(&tfe.Variable{ID: "var-345"},
+			errors.New("NO"))
+
+		result, err := out(input)
+		if result != "" || err == nil || err.Error() != "error creating variable \"NEW_ENV_VAR\": NO" {
 			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
 	})
@@ -187,7 +231,7 @@ func TestOutErrorConditions(t *testing.T) {
 
 		variables.EXPECT().List(gomock.Any(), "foo", gomock.Any()).Return(&vlist, nil)
 		runs.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&tfe.Run{ID: "bar", Status: tfe.RunPending},
-				errors.New("NO"))
+			errors.New("NO"))
 
 		result, err := out(input)
 		if result != "" || err == nil || err.Error() != "error creating run: NO" {

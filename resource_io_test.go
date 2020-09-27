@@ -58,4 +58,10 @@ func TestGetInput(t *testing.T)  {
 	if err != nil {
 		t.Error("errored on good config")
 	}
+
+	inputBytes = []byte(`{"params":{"bnoggle":"farf"},"version":{"ref":"foo"}}`)
+	_, err = getInputs(bytes.NewReader(inputBytes))
+	if err == nil || !strings.Contains(err.Error(), "bnoggle") {
+		t.Error("didn't complain about invalid field")
+	}
 }

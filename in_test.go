@@ -26,6 +26,10 @@ func TestIn(t *testing.T) {
 		Status:    tfe.RunPending,
 		Message:   "test run",
 		CreatedAt: theTime,
+		CostEstimate: &tfe.CostEstimate{
+			DeltaMonthlyCost:    "+a billion dollars",
+			ProposedMonthlyCost: "a few cents",
+		},
 	}
 
 	vars := tfe.VariableList{Items: []*tfe.Variable{
@@ -112,6 +116,11 @@ func TestIn(t *testing.T) {
 		if _, err := os.Stat(fmt.Sprintf("%s/outputs.json", workingDirectory)); os.IsNotExist(err) {
 			t.Error("output json file doesn't exist/is in the wrong place")
 		}
+		for _, v := range result.Metadata {
+			if v.Name == "cost_delta" && v.Value != "+a billion dollars" {
+				t.Error("bad metadata value")
+			}
+		}
 	})
 	t.Run("sensitive values, state version 4", func(t *testing.T) {
 		setup(t)
@@ -122,7 +131,7 @@ func TestIn(t *testing.T) {
 
 		workingDirectory = fmt.Sprintf("%s/%s", wd, "testInV4Sensitive")
 		os.MkdirAll(workingDirectory, os.FileMode(0755))
-		
+
 		input.Params.Sensitive = true
 		_, err := in(input)
 		if err != nil {

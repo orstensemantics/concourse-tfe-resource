@@ -12,7 +12,7 @@ makemocks:
 test: makemocks
 	golint
 	rm -r testIn* || true
-	go test -v -coverprofile cover.out -covermode=count
+	go test -v -coverprofile cover.out -covermode=atomic
 	go tool cover -html=cover.out -o coverage.html
 
 check: test

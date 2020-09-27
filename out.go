@@ -38,7 +38,7 @@ func out(input inputJSON) (string, error) {
 	}
 	result := outOutputJSON{
 		Version:  version{Ref: run.ID},
-		Metadata: runMetadata(run),
+		Metadata: runMetadata(input, run),
 	}
 	output, err := json.Marshal(result)
 	if err != nil {
