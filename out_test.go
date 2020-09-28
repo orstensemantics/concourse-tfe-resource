@@ -106,7 +106,7 @@ func TestOutErrorConditions(t *testing.T) {
 		variables.EXPECT().List(gomock.Any(), "foo", gomock.Any()).Return(&vlist, errors.New("NO"))
 
 		result, err := out(input)
-		if result != "" || err == nil || err.Error() != "error retrieving workspace variables: NO" {
+		if result != nil || err == nil || err.Error() != "error retrieving workspace variables: NO" {
 			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
 	})
@@ -121,7 +121,7 @@ func TestOutErrorConditions(t *testing.T) {
 		variables.EXPECT().List(gomock.Any(), "foo", gomock.Any()).Return(&vlist, nil)
 
 		result, err := out(input)
-		if result != "" || err == nil ||
+		if result != nil || err == nil ||
 			err.Error() != "error finding value for variable \"doom\": no value or filename provided" {
 			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
@@ -138,7 +138,7 @@ func TestOutErrorConditions(t *testing.T) {
 		variables.EXPECT().List(gomock.Any(), "foo", gomock.Any()).Return(&vlist, nil)
 
 		result, err := out(input)
-		if result != "" || err == nil ||
+		if result != nil || err == nil ||
 			!strings.Contains(err.Error(), "error getting value for variable \"gloom\":") {
 			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
@@ -162,7 +162,7 @@ func TestOutErrorConditions(t *testing.T) {
 		runs.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&tfe.Run{ID: "bar", Status: tfe.RunPending}, nil)
 
 		result, err := out(input)
-		if result == "" || err != nil {
+		if result == nil || err != nil {
 			t.Errorf("unexpected failure:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
 	})
@@ -181,7 +181,7 @@ func TestOutErrorConditions(t *testing.T) {
 			errors.New("NO"))
 
 		result, err := out(input)
-		if result != "" || err == nil || err.Error() != "error creating variable \"new_var\": NO" {
+		if result != nil || err == nil || err.Error() != "error creating variable \"new_var\": NO" {
 			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
 	})
@@ -200,7 +200,7 @@ func TestOutErrorConditions(t *testing.T) {
 			errors.New("NO"))
 
 		result, err := out(input)
-		if result != "" || err == nil || err.Error() != "error creating variable \"NEW_ENV_VAR\": NO" {
+		if result != nil || err == nil || err.Error() != "error creating variable \"NEW_ENV_VAR\": NO" {
 			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
 	})
@@ -220,7 +220,7 @@ func TestOutErrorConditions(t *testing.T) {
 				errors.New("NO"))
 
 		result, err := out(input)
-		if result != "" || err == nil || err.Error() != "error updating variable \"existing_var\": NO" {
+		if result != nil || err == nil || err.Error() != "error updating variable \"existing_var\": NO" {
 			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
 	})
@@ -234,7 +234,7 @@ func TestOutErrorConditions(t *testing.T) {
 			errors.New("NO"))
 
 		result, err := out(input)
-		if result != "" || err == nil || err.Error() != "error creating run: NO" {
+		if result != nil || err == nil || err.Error() != "error creating run: NO" {
 			t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 		}
 	})
