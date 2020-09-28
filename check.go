@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/go-tfe"
 )
 
-func check(input inputJSON) (string, error) {
+func check(input inputJSON) ([]byte, error) {
 	var (
 		page  int  = 0
 		found bool = false
@@ -21,7 +21,7 @@ func check(input inputJSON) (string, error) {
 		rlo.PageNumber = page
 		runs, err := client.Runs.List(context.Background(), workspace.ID, rlo)
 		if err != nil {
-			return "", formatError(err, "listing runs")
+			return nil, formatError(err, "listing runs")
 		}
 
 		for _, v := range runs.Items {
@@ -44,6 +44,5 @@ func check(input inputJSON) (string, error) {
 		list = checkOutputJSON{list[0]}
 	}
 
-	output, _ := json.Marshal(list)
-	return string(output), nil
+	return json.Marshal(list)
 }

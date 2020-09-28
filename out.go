@@ -4,26 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/hashicorp/go-tfe"
 	"os"
 )
 
-func out(input inputJSON) (string, error) {
-	list, err := getVariableList(client, workspace)
+func out(input inputJSON) ([]byte, error) {
+	list, err := getVariableList()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	for k, v := range input.Params.Vars {
 		err := pushVar(list, k, v, false)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 	for k, v := range input.Params.EnvVars {
 		err := pushVar(list, k, v, true)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
@@ -34,17 +33,13 @@ func out(input inputJSON) (string, error) {
 
 	run, err := client.Runs.Create(context.Background(), rco)
 	if err != nil {
-		return "", formatError(err, "creating run")
+		return nil, formatError(err, "creating run")
 	}
 	result := outOutputJSON{
 		Version:  version{Ref: run.ID},
 		Metadata: runMetadata(input, run),
 	}
-	output, err := json.Marshal(result)
-	if err != nil {
-		return "", formatError(err, "marshaling output json")
-	}
-	return string(output), nil
+	return json.Marshal(result)
 }
 
 func pushVar(list tfe.VariableList, name string, v variableJSON, isEnv bool) error {
@@ -73,7 +68,7 @@ func pushVar(list tfe.VariableList, name string, v variableJSON, isEnv bool) err
 		}
 		_, err := client.Variables.Update(context.Background(), workspace.ID, variable.ID, update)
 		if err != nil {
-			return formatError(err, fmt.Sprintf("updating variable \"%s\"", name))
+			return formatError(err, "updating variable \"" + name + "\"")
 		}
 	} else {
 		var category tfe.CategoryType
@@ -92,7 +87,7 @@ func pushVar(list tfe.VariableList, name string, v variableJSON, isEnv bool) err
 		}
 		_, err := client.Variables.Create(context.Background(), workspace.ID, create)
 		if err != nil {
-			return formatError(err, fmt.Sprintf("creating variable \"%s\"", name))
+			return formatError(err, "creating variable \"" + name + "\"")
 		}
 	}
 	return nil
@@ -103,23 +98,23 @@ func getValue(v variableJSON, name string) (string, error) {
 	if v.Value != "" {
 		value = v.Value
 	} else if v.File != "" {
-		fileName := fmt.Sprintf("%s%s%s", workingDirectory, string(os.PathSeparator), v.File)
+		fileName := workingDirectory + string(os.PathSeparator) + v.File
 		f, err := os.Open(fileName)
 		if err != nil {
-			return "", formatError(err, fmt.Sprintf("getting value for variable \"%s\"", name))
+			return "", formatError(err, "getting value for variable \"" + name + "\"")
 		}
 		s, err := f.Stat()
 		if err != nil {
-			return "", formatError(err, fmt.Sprintf("getting stat value file for variable \"%s\"", name))
+			return "", formatError(err, "getting stat value file for variable \"" + name + "\"")
 		}
 		byteVal := make([]byte, s.Size())
 		if _, err = f.Read(byteVal); err != nil {
-			return "", formatError(err, fmt.Sprintf("reading value for variable \"%s\"", name))
+			return "", formatError(err, "reading value for variable \"" + name + "\"")
 		}
 		value = string(byteVal)
 	} else {
 		return "", formatError(errors.New("no value or filename provided"),
-			fmt.Sprintf("finding value for variable \"%s\"", name))
+			"finding value for variable \"" + name + "\"")
 	}
 	return value, nil
 }

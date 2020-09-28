@@ -33,6 +33,11 @@ jobs:
         go get -u golang.org/x/lint/golint
 
     - name: Test
+      env:
+        TFE_ADDRESS: https://app.terraform.io
+        TFE_ORGANIZATION: orstensemantics
+        TFE_WORKSPACE: tfe-resource-test
+        ATLAS_TOKEN: ${{ secrets.ATLAS_TOKEN }}
       run: |
         mkdir -p mock-go-tfe
         mockgen github.com/hashicorp/go-tfe Workspaces,Runs,Variables,StateVersions > mock-go-tfe/mocks.go

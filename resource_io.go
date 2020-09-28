@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/url"
 	"os"
 )
@@ -66,24 +67,39 @@ func getInputs(in io.Reader) (inputJSON, error) {
 
 	decoder := json.NewDecoder(in)
 	decoder.DisallowUnknownFields()
-	err := decoder.Decode(&input)
-	if err != nil {
+	
+	if err := decoder.Decode(&input); err != nil {
 		return input, formatError(err, "parsing input")
 	}
 
 	// a few sanity checks
+	misconfiguration := false 
 	if _, err := url.ParseRequestURI(input.Source.Address); err != nil {
-		return input, formatError(err,"parsing source address")
+		log.Printf("error in source configuration: \"%v\" is not a valid URL", input.Source.Address)
+		misconfiguration = true
 	}
-	if input.Source.Workspace == "" || input.Source.Organization == "" || input.Source.Token == "" {
-		return input, fmt.Errorf("error parsing input: workspace, organization, and token fields must be set")
+	if input.Source.Workspace == "" {
+		log.Print("error in source configuration: workspace is not set")
+		misconfiguration = true
+	} 
+	if input.Source.Organization == "" {
+		log.Print("error in source configuration: organization is not set")
+		misconfiguration = true
+	} 
+	if input.Source.Token == "" {
+		log.Print("error in source configuration: token is not set")
+		misconfiguration = true
 	}
 	if input.Params.PollingPeriod < 1 {
-		return input, fmt.Errorf("error parsing input: polling_period must be at least 1 second")
+		log.Print("error in parameter value: polling_period must be at least 1 second")
+		misconfiguration = true
+	}
+	if misconfiguration {
+		return input, fmt.Errorf("invalid configuration provided")
 	}
 	return input, nil
 }
 
 func formatError(err error, context string) error {
-	return fmt.Errorf("error %s: %s", context, err)
+	return fmt.Errorf("error %s: %w", context, err)
 }

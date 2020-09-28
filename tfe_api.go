@@ -41,7 +41,7 @@ func runMetadata(input inputJSON, run *tfe.Run) (metadata []versionMetadata) {
 	return
 }
 
-func getVariableList(client *tfe.Client, workspace *tfe.Workspace) (tfe.VariableList, error) {
+func getVariableList() (tfe.VariableList, error) {
 	listOptions := tfe.VariableListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 0}}
 	vars := tfe.VariableList{}
 	for {
@@ -56,3 +56,16 @@ func getVariableList(client *tfe.Client, workspace *tfe.Workspace) (tfe.Variable
 	}
 	return vars, nil
 }
+
+func getWorkspaceOutputs() (map[string]outputStateV4, error) {
+	sv, err := client.StateVersions.Current(context.Background(), workspace.ID)
+	if err != nil {
+		return nil, formatError(err, "retrieving workspace state")
+	}
+	stateFile, err := client.StateVersions.Download(context.Background(), sv.DownloadURL)
+	if err != nil {
+		return nil, formatError(err, "downloading state file")
+	}
+	return getRootOutputs(stateFile)
+}
+

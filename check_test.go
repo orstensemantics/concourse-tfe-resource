@@ -114,7 +114,7 @@ func TestCheckWithFailingListCall(t *testing.T) {
 	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo1)).Return(&firstCall, errors.New("NO"))
 	output, err := check(input)
 
-	if output != "" || err == nil || err.Error() != "error listing runs: NO" {
+	if output != nil || err == nil || err.Error() != "error listing runs: NO" {
 		t.Errorf("unexpected:\n\tresult = \"%s\"\n\terr = \"%s\"", result, err)
 	}
 }

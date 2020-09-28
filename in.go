@@ -3,20 +3,19 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/hashicorp/go-tfe"
 	"log"
 	"os"
 	"time"
 )
 
-func in(input inputJSON) (string, error) {
+func in(input inputJSON) ([]byte, error) {
 	var run *tfe.Run
 	var err error
 	for {
 		run, err = client.Runs.Read(context.Background(), input.Version.Ref)
 		if err != nil {
-			return "", formatError(err, "retrieving run")
+			return nil, formatError(err, "retrieving run")
 		}
 		if finished(run) {
 			break
@@ -33,46 +32,39 @@ func in(input inputJSON) (string, error) {
 	for _, v := range output.Metadata {
 		metadataMap[v.Name] = v.Value
 	}
-	metadataJSON, err := json.Marshal(metadataMap)
-	if err != nil {
-		return "", formatError(err, "marshaling metadata json")
+	if err := writeOutputDirectory(input, metadataMap); err != nil {
+		return nil, err
 	}
-
-	if err = writeAndClose(fmt.Sprintf("%s%smetadata.json", workingDirectory, string(os.PathSeparator)), metadataJSON);
-		err != nil {
-		return "", formatError(err, "writing metadata json")
-	}
-	if err = writeVariables(); err != nil {
-		return "", err
-	}
-
-	err = writeOutputs(input.Params.Sensitive)
-
-	out, _ := json.Marshal(output)
-	return string(out), err
+	return json.Marshal(output)
 }
 
-func writeOutputs(sensitive bool) error {
-	outputDir := fmt.Sprintf("%s%soutputs", workingDirectory, string(os.PathSeparator))
+func writeOutputDirectory(input inputJSON, metadataMap map[string]string) error {
+	if err := writeJSONFile(metadataMap, "metadata.json"); err != nil {
+		return err
+	}
+	if err := writeWorkspaceVariables(); err != nil {
+		return err
+	}
+	if err := writeStateOutputs(input.Params.Sensitive); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeStateOutputs(sensitive bool) error {
+	outputDir := workingDirectory + string(os.PathSeparator) + "outputs"
 	if err := os.MkdirAll(outputDir, os.FileMode(0777)); err != nil {
 		return formatError(err, "creating run output directory")
 	}
 
-	sv, err := client.StateVersions.Current(context.Background(), workspace.ID)
-	if err != nil {
-		return formatError(err, "retrieving workspace state")
-	}
-	stateFile, err := client.StateVersions.Download(context.Background(), sv.DownloadURL)
-	if err != nil {
-		return formatError(err, "downloading state file")
-	}
-	outputs, err := getRootOutputs(stateFile)
+	outputs, err := getWorkspaceOutputs()
 	if err != nil {
 		return err
 	}
+
 	jsonOutput := make(map[string]json.RawMessage)
 	for key, output := range outputs {
-		fileName := fmt.Sprintf("%s%s%s", outputDir, string(os.PathSeparator), key)
+		fileName := outputDir + string(os.PathSeparator) + key
 		var outputValue json.RawMessage
 		if !output.Sensitive || sensitive {
 			outputValue = output.ValueRaw
@@ -82,23 +74,18 @@ func writeOutputs(sensitive bool) error {
 			return err
 		}
 	}
-	jsonOutFile, err := json.Marshal(jsonOutput)
-	if err != nil {
-		return formatError(err, "marshaling output json")
-	}
-	return writeAndClose(fmt.Sprintf("%s%soutputs.json", workingDirectory, string(os.PathSeparator)), jsonOutFile)
+	return writeJSONFile(jsonOutput, "outputs.json")
 }
 
-func writeVariables() error {
+func writeWorkspaceVariables() error {
 	var (
 		vars       tfe.VariableList
 		err        error
-		varsDir    = fmt.Sprintf("%s%s%s", workingDirectory, string(os.PathSeparator), "vars")
-		envVarsDir = fmt.Sprintf("%s%s%s", workingDirectory, string(os.PathSeparator), "env_vars")
-		hclVarsDir = fmt.Sprintf("%s%s%s", varsDir, string(os.PathSeparator), "hcl")
+		varsDir    = workingDirectory + string(os.PathSeparator) + "vars"
+		envVarsDir = workingDirectory + string(os.PathSeparator) + "env_vars"
+		hclVarsDir = varsDir + string(os.PathSeparator) + "hcl"
 	)
-	vars, err = getVariableList(client, workspace)
-	if err != nil {
+	if vars, err = getVariableList(); err != nil {
 		return err
 	}
 
@@ -112,13 +99,26 @@ func writeVariables() error {
 	for _, v := range vars.Items {
 		var fileName string
 		if v.Category == tfe.CategoryEnv {
-			fileName = fmt.Sprintf("%s%s%s", envVarsDir, string(os.PathSeparator), v.Key)
+			fileName = envVarsDir + string(os.PathSeparator) + v.Key
 		} else if v.HCL {
-			fileName = fmt.Sprintf("%s%s%s", hclVarsDir, string(os.PathSeparator), v.Key)
+			fileName = hclVarsDir + string(os.PathSeparator) + v.Key
 		} else {
-			fileName = fmt.Sprintf("%s%s%s", varsDir, string(os.PathSeparator), v.Key)
+			fileName = varsDir + string(os.PathSeparator) + v.Key
 		}
 		writeAndClose(fileName, []byte(v.Value))
+	}
+	return nil
+}
+
+func writeJSONFile(contents interface{}, fileName string) error {
+	byteContents, err := json.Marshal(contents)
+	if err != nil {
+		return formatError(err, "marshaling "+fileName)
+	}
+
+	if err = writeAndClose(workingDirectory+string(os.PathSeparator)+fileName, byteContents);
+		err != nil {
+		return err
 	}
 	return nil
 }
@@ -126,13 +126,13 @@ func writeVariables() error {
 func writeAndClose(fileName string, value []byte) error {
 	f, err := os.Create(fileName)
 	if err != nil {
-		return formatError(err, fmt.Sprintf("creating %s", fileName))
+		return formatError(err, "creating "+fileName)
 	}
 	if _, err := f.Write(value); err != nil {
-		return formatError(err, fmt.Sprintf("writing %s", fileName))
+		return formatError(err, "writing "+fileName)
 	}
 	if err := f.Close(); err != nil {
-		return formatError(err, fmt.Sprintf("closing %s", fileName))
+		return formatError(err, "closing "+fileName)
 	}
 	return nil
 }

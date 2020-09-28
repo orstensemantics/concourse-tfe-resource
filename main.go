@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/hashicorp/go-tfe"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -33,29 +33,33 @@ func startup(input inputJSON) error {
 	return nil
 }
 
-func main() {
-	var output string
-	input, err := getInputs(os.Stdin)
+func realMain(args []string, stdin io.Reader) ([]byte, error) {
+	var output []byte
+	input, err := getInputs(stdin)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	err = startup(input)
-	if err != nil {
-		log.Fatal(err)
+	if err := startup(input); err != nil {
+		return nil, err
 	}
 
-	switch path.Base(os.Args[0]) {
+	switch path.Base(args[0]) {
 	case "check":
 		output, err = check(input)
 	case "in":
-		workingDirectory = os.Args[1]
+		workingDirectory = args[1]
 		output, err = in(input)
 	case "out":
-		workingDirectory = os.Args[1]
+		workingDirectory = args[1]
 		output, err = out(input)
 	}
+	return output, err
+}
+
+func main() {
+	output, err := realMain(os.Args, os.Stdin)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Print(output)
+	_, _ = os.Stdout.Write(output)
 }
