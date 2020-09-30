@@ -51,7 +51,7 @@ func TestCheckWithExistingVersion(t *testing.T) {
 
 	if len(result) != 3 {
 		t.Errorf("check with third oldest version returned %d elements", len(result))
-	} else if result[2].Ref != "2" {
+	} else if result[0].Ref != "2" {
 		t.Errorf("check with third oldest version didn't return the expected elements")
 	}
 }
@@ -74,7 +74,7 @@ func TestCheckWithVersionOnSecondPage(t *testing.T) {
 	json.Unmarshal([]byte(output), &result)
 	if len(result) != 9 {
 		t.Errorf("check for 9th most recent version (multiple calls) returned %d results", len(result))
-	} else if result[8].Ref != "8" {
+	} else if result[0].Ref != "8" {
 		t.Errorf("multiple call check returns incorrect results")
 	}
 }
@@ -98,7 +98,7 @@ func TestCheckWithNonexistentVersion(t *testing.T) {
 
 	if len(result) != 1 {
 		t.Errorf("check with non-present version returned %d elements", len(result))
-	} else if result[0].Ref != "0" {
+	} else if result[len(result)-1].Ref != "0" {
 		t.Errorf("check with non-present version didn't return the first result")
 	}
 }
