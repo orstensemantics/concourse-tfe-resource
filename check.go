@@ -25,7 +25,7 @@ func check(input inputJSON) ([]byte, error) {
 		}
 
 		for _, v := range runs.Items {
-			list = append(list, version{Ref: v.ID})
+			list = append([]version{version{Ref: v.ID}}, list...)
 			if v.ID == input.Version.Ref || input.Version.Ref == "" {
 				found = true
 				break
@@ -41,7 +41,7 @@ func check(input inputJSON) ([]byte, error) {
 	if !found && len(list) > 0 {
 		// "if your resource is unable to determine which versions are newer than the given version, then the
 		// current version of your resource should be returned"
-		list = checkOutputJSON{list[0]}
+		list = checkOutputJSON{list[len(list)-1]}
 	}
 
 	return json.Marshal(list)
