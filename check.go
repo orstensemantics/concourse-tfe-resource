@@ -10,7 +10,7 @@ func check(input inputJSON) ([]byte, error) {
 	var (
 		page  int  = 0
 		found bool = false
-		list       = checkOutputJSON{}
+		list  checkOutputJSON
 	)
 
 	rlo := tfe.RunListOptions{
@@ -26,7 +26,7 @@ func check(input inputJSON) ([]byte, error) {
 
 		for _, v := range runs.Items {
 			list = append([]version{version{Ref: v.ID}}, list...)
-			if v.ID == input.Version.Ref || input.Version.Ref == "" {
+			if v.ID == input.Version.Ref {
 				found = true
 				break
 			}
@@ -38,7 +38,7 @@ func check(input inputJSON) ([]byte, error) {
 		}
 	}
 
-	if !found && len(list) > 0 {
+	if !found && input.Version.Ref != "" && len(list) > 0 {
 		// "if your resource is unable to determine which versions are newer than the given version, then the
 		// current version of your resource should be returned"
 		list = checkOutputJSON{list[len(list)-1]}
