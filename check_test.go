@@ -24,14 +24,15 @@ func TestCheckWithNilVersion(t *testing.T) {
 	input := inputJSON{Source: sourceJSON{Workspace: "foo"}}
 
 	runs.EXPECT().List(gomock.Any(), gomock.Eq(workspace.ID), gomock.Any()).Return(&firstCall, nil)
+	runs.EXPECT().List(gomock.Any(), gomock.Eq(workspace.ID), gomock.Any()).Return(&tfe.RunList{}, nil)
 
 	output, _ := check(input)
 
 	json.Unmarshal([]byte(output), &result)
 
-	if len(result) != 1 {
+	if len(result) != 5 {
 		t.Errorf("check with nil version returned %d elements", len(result))
-	} else if result[0].Ref != "0" {
+	} else if result[0].Ref != "4" {
 		t.Errorf("check with nil version didn't return the first result")
 	}
 }
