@@ -27,10 +27,10 @@ func runMetadata(input inputJSON, run *tfe.Run) (metadata []versionMetadata) {
 	runURL := fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s",
 		input.Source.Address, input.Source.Organization, input.Source.Workspace, run.ID)
 	metadata = []versionMetadata{
-		versionMetadata{Value: run.CreatedAt.String(), Name: "created_at"},
-		versionMetadata{Value: string(run.Status), Name: "final_status"},
-		versionMetadata{Value: run.Message, Name: "message"},
-		versionMetadata{Value: runURL, Name: "run_url"},
+		{Value: run.CreatedAt.String(), Name: "created_at"},
+		{Value: string(run.Status), Name: "final_status"},
+		{Value: run.Message, Name: "message"},
+		{Value: runURL, Name: "run_url"},
 	}
 	if run.CostEstimate != nil {
 		metadata = append(metadata, versionMetadata{Value: run.CostEstimate.ProposedMonthlyCost, Name: "monthly_cost"})

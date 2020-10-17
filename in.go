@@ -116,8 +116,7 @@ func writeJSONFile(contents interface{}, fileName string) error {
 		return formatError(err, "marshaling "+fileName)
 	}
 
-	if err = writeAndClose(workingDirectory+string(os.PathSeparator)+fileName, byteContents);
-		err != nil {
+	if err = writeAndClose(workingDirectory+string(os.PathSeparator)+fileName, byteContents); err != nil {
 		return err
 	}
 	return nil

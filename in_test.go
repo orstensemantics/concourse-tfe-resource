@@ -33,9 +33,9 @@ func TestIn(t *testing.T) {
 	}
 
 	vars := tfe.VariableList{Items: []*tfe.Variable{
-		&tfe.Variable{Key: "existing_var", ID: "var-123", Value: "something"},
-		&tfe.Variable{Key: "hcl_var", ID: "var-234", HCL: true, Value: "some hcl thing"},
-		&tfe.Variable{Key: "ENV_VAR", ID: "var-345", Category: tfe.CategoryEnv, Value: "KEY"},
+		{Key: "existing_var", ID: "var-123", Value: "something"},
+		{Key: "hcl_var", ID: "var-234", HCL: true, Value: "some hcl thing"},
+		{Key: "ENV_VAR", ID: "var-345", Category: tfe.CategoryEnv, Value: "KEY"},
 	}}
 
 	sv := tfe.StateVersion{

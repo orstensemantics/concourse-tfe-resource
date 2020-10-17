@@ -26,6 +26,8 @@ jobs:
         run: |
           go get -v -t -d ./...
           GO111MODULE=on go get github.com/golang/mock/mockgen
+          curl https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 --output cc-test-reporter
+          chmod +x cc-test-reporter
 
       - name: Create mocks
         run: |
@@ -33,17 +35,13 @@ jobs:
           mockgen github.com/hashicorp/go-tfe Workspaces,Runs,Variables,StateVersions > mock-go-tfe/mocks.go
 
       - name: Run tests
-        uses: paambaati/codeclimate-action@v2.7.4
         env:
-          CC_TEST_REPORTER_ID: ${{secrets.CODECLIMATE_REPORTER_ID}}
           TFE_ADDRESS: https://app.terraform.io
           TFE_ORGANIZATION: orstensemantics
           TFE_WORKSPACE: tfe-resource-test
           ATLAS_TOKEN: ${{secrets.ATLAS_TOKEN}}
-        with:
-          coverageCommand: go test -v -coverprofile coverage.out -covermode=count
-          coverageLocations: ${{github.workspace}}/coverage.out:gocov
-      - name: Publish coverage to codecov
-        uses: codecov/codecov-action@v1
-        with:
-          file: ./coverage.out
+          CC_TEST_REPORTER_ID: ${{secrets.CODECLIMATE_REPORTER_ID}}
+        run: |
+          ./cc-test-reporter before-build
+          go test -v -coverprofile coverage.out -covermode=count
+          ./cc-test-reporter after-build -t gocov -p concourse-tfe-resource coverage.out
