@@ -25,7 +25,7 @@ func check(input inputJSON) ([]byte, error) {
 		}
 
 		for _, v := range runs.Items {
-			list = append([]version{version{Ref: v.ID}}, list...)
+			list = append([]version{{Ref: v.ID}}, list...)
 			if v.ID == input.Version.Ref {
 				found = true
 				break
