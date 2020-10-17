@@ -26,7 +26,7 @@ jobs:
         run: |
           go get -v -t -d ./...
           GO111MODULE=on go get github.com/golang/mock/mockgen
-          curl https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 --output cc-test-reporter
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 --output cc-test-reporter
           chmod +x cc-test-reporter
 
       - name: Create mocks
