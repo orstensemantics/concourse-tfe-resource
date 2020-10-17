@@ -27,6 +27,11 @@ jobs:
           go get -v -t -d ./...
           GO111MODULE=on go get github.com/golang/mock/mockgen
 
+      - name: Create mocks
+        run: |
+          mkdir -p mock-go-tfe
+          mockgen github.com/hashicorp/go-tfe Workspaces,Runs,Variables,StateVersions > mock-go-tfe/mocks.go
+
       - name: Run tests
         uses: paambaati/codeclimate-action@v2.7.4
         env:
@@ -36,10 +41,7 @@ jobs:
           TFE_WORKSPACE: tfe-resource-test
           ATLAS_TOKEN: ${{secrets.ATLAS_TOKEN}}
         with:
-          coverageCommand: |
-            mkdir -p mock-go-tfe
-            mockgen github.com/hashicorp/go-tfe Workspaces,Runs,Variables,StateVersions > mock-go-tfe/mocks.go
-            go test -v -coverprofile coverage.out -covermode=count
+          coverageCommand: go test -v -coverprofile coverage.out -covermode=count
           coverageLocations: ${{github.workspace}}/coverage.out
       - name: Publish coverage to codecov
         uses: codecov/codecov-action@v1
