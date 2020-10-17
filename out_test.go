@@ -147,7 +147,7 @@ func TestOutErrorConditions(t *testing.T) {
 		setup(t)
 		workingDirectory, _ = os.Getwd()
 		fileName := fmt.Sprintf("%s%sreadable-test-file", workingDirectory, string(os.PathSeparator))
-		f, err := os.OpenFile(fileName, os.O_CREATE | os.O_RDWR, os.FileMode(0755))
+		f, _ := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, os.FileMode(0755))
 		_, _ = f.Write([]byte("athinger"))
 		_ = f.Close()
 		badVars := make(map[string]variableJSON)

@@ -64,14 +64,14 @@ func TestRealMain(t *testing.T) {
 	args = []string{"in", "testMainIn"}
 	input.Version = version{Ref: run[0].Ref}
 	byteInput, _ = json.Marshal(input)
-	output, err = realMain(args, bytes.NewReader(byteInput))
+	_, err = realMain(args, bytes.NewReader(byteInput))
 
 	if err != nil {
 		t.Errorf("in on checked run failed: %s", err)
 	}
 
 	args[0] = "out"
-	output, err = realMain(args, bytes.NewReader(byteInput))
+	_, err = realMain(args, bytes.NewReader(byteInput))
 
 	if err != nil {
 		t.Errorf("out failed: %s", err)

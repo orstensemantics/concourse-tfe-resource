@@ -14,10 +14,10 @@ type (
 		Ref string `json:"ref"`
 	}
 	sourceJSON struct {
-		Workspace     string `json:"workspace"`
-		Organization  string `json:"organization"`
-		Token         string `json:"token"`
-		Address       string `json:"address"`
+		Workspace    string `json:"workspace"`
+		Organization string `json:"organization"`
+		Token        string `json:"token"`
+		Address      string `json:"address"`
 	}
 	inputJSON struct {
 		Params  paramsJSON `json:"params"`
@@ -54,7 +54,7 @@ type (
 func getInputs(in io.Reader) (inputJSON, error) {
 	input := inputJSON{}
 	input.Source = sourceJSON{
-		Address:       "https://app.terraform.io",
+		Address: "https://app.terraform.io",
 	}
 	input.Params = paramsJSON{
 		Message: fmt.Sprintf("Queued by %s/%s (%s)",
@@ -62,18 +62,18 @@ func getInputs(in io.Reader) (inputJSON, error) {
 			os.Getenv("BUILD_JOB_NAME"),
 			os.Getenv("BUILD_NAME")),
 		PollingPeriod: 5,
-		Sensitive: false,
+		Sensitive:     false,
 	}
 
 	decoder := json.NewDecoder(in)
 	decoder.DisallowUnknownFields()
-	
+
 	if err := decoder.Decode(&input); err != nil {
 		return input, formatError(err, "parsing input")
 	}
 
 	// a few sanity checks
-	misconfiguration := false 
+	misconfiguration := false
 	if _, err := url.ParseRequestURI(input.Source.Address); err != nil {
 		log.Printf("error in source configuration: \"%v\" is not a valid URL", input.Source.Address)
 		misconfiguration = true
@@ -81,11 +81,11 @@ func getInputs(in io.Reader) (inputJSON, error) {
 	if input.Source.Workspace == "" {
 		log.Print("error in source configuration: workspace is not set")
 		misconfiguration = true
-	} 
+	}
 	if input.Source.Organization == "" {
 		log.Print("error in source configuration: organization is not set")
 		misconfiguration = true
-	} 
+	}
 	if input.Source.Token == "" {
 		log.Print("error in source configuration: token is not set")
 		misconfiguration = true

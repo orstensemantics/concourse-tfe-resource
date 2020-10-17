@@ -8,12 +8,12 @@ import (
 	"testing"
 )
 
-func TestGetInput(t *testing.T)  {
+func TestGetInput(t *testing.T) {
 	input := inputJSON{
-		Params:  paramsJSON{
+		Params: paramsJSON{
 			PollingPeriod: -1,
 		},
-		Source:  sourceJSON{
+		Source: sourceJSON{
 			Workspace:    "",
 			Organization: "",
 			Token:        "",

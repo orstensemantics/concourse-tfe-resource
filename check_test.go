@@ -40,10 +40,10 @@ func TestCheckWithNilVersion(t *testing.T) {
 func TestCheckWithExistingVersion(t *testing.T) {
 	setup(t)
 	result := checkOutputJSON{}
-	
+
 	firstCall := runList(0, 5)
 	input := inputJSON{Source: sourceJSON{Workspace: "foo"}}
-	
+
 	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Any()).Return(&firstCall, nil)
 	input.Version.Ref = "2"
 	output, _ := check(input)

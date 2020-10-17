@@ -1,4 +1,13 @@
 # concourse-tfe-resource
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/orstensemantics/concourse-tfe-resource)](https://goreportcard.com/report/github.com/orstensemantics/concourse-tfe-resource)
+[![Maintainability](https://api.codeclimate.com/v1/badges/7dd55f613030fef89324/maintainability)](https://codeclimate.com/github/orstensemantics/concourse-tfe-resource/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/7dd55f613030fef89324/test_coverage)](https://codeclimate.com/github/orstensemantics/concourse-tfe-resource/test_coverage)
+[![Dependencies](https://img.shields.io/librariesio/github/orstensemantics/concourse-tfe-resource)](https://libraries.io/github/orstensemantics/concourse-tfe-resource)
+![Build status](https://github.com/orstensemantics/concourse-tfe-resource/workflows/tests/badge.svg)
+![Docker build status](https://img.shields.io/docker/cloud/build/orstensemantics/concourse-tfe-resource)
+![Docker Image Size](https://img.shields.io/docker/image-size/orstensemantics/concourse-tfe-resource)
+
 Concourse resource for Terraform Cloud and Terraform Enterprise using [Hashicorp's go-tfe library](https://github.com/hashicorp/go-tfe).
 
 ## Usage

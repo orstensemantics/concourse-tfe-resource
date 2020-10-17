@@ -24,7 +24,7 @@ func TestGetWorkspaceOutputs(t *testing.T) {
 		setup(t)
 
 		sv := tfe.StateVersion{
-			DownloadURL:  "https://foo.bar",
+			DownloadURL: "https://foo.bar",
 		}
 		stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, nil)
 		stateVersions.EXPECT().Download(gomock.Any(), "https://foo.bar").Return(nil, fmt.Errorf("NO"))
@@ -36,4 +36,3 @@ func TestGetWorkspaceOutputs(t *testing.T) {
 		}
 	})
 }
-
