@@ -43,5 +43,5 @@ jobs:
           CC_TEST_REPORTER_ID: ${{secrets.CODECLIMATE_REPORTER_ID}}
         run: |
           ./cc-test-reporter before-build
-          go test -v -coverprofile coverage.out -covermode=count
+          go test -v -coverprofile c.out -covermode=count
           ./cc-test-reporter after-build -t gocov -p concourse-tfe-resource coverage.out
