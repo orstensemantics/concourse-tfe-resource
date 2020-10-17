@@ -42,7 +42,7 @@ jobs:
           ATLAS_TOKEN: ${{secrets.ATLAS_TOKEN}}
         with:
           coverageCommand: go test -v -coverprofile coverage.out -covermode=count
-          coverageLocations: ${{github.workspace}}/coverage.out
+          coverageLocations: ${{github.workspace}}/coverage.out:gocov
       - name: Publish coverage to codecov
         uses: codecov/codecov-action@v1
         with:
