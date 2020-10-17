@@ -68,7 +68,7 @@ func pushVar(list tfe.VariableList, name string, v variableJSON, isEnv bool) err
 		}
 		_, err := client.Variables.Update(context.Background(), workspace.ID, variable.ID, update)
 		if err != nil {
-			return formatError(err, "updating variable \"" + name + "\"")
+			return formatError(err, "updating variable \""+name+"\"")
 		}
 	} else {
 		var category tfe.CategoryType
@@ -87,7 +87,7 @@ func pushVar(list tfe.VariableList, name string, v variableJSON, isEnv bool) err
 		}
 		_, err := client.Variables.Create(context.Background(), workspace.ID, create)
 		if err != nil {
-			return formatError(err, "creating variable \"" + name + "\"")
+			return formatError(err, "creating variable \""+name+"\"")
 		}
 	}
 	return nil
@@ -101,20 +101,20 @@ func getValue(v variableJSON, name string) (string, error) {
 		fileName := workingDirectory + string(os.PathSeparator) + v.File
 		f, err := os.Open(fileName)
 		if err != nil {
-			return "", formatError(err, "getting value for variable \"" + name + "\"")
+			return "", formatError(err, "getting value for variable \""+name+"\"")
 		}
 		s, err := f.Stat()
 		if err != nil {
-			return "", formatError(err, "getting stat value file for variable \"" + name + "\"")
+			return "", formatError(err, "getting stat value file for variable \""+name+"\"")
 		}
 		byteVal := make([]byte, s.Size())
 		if _, err = f.Read(byteVal); err != nil {
-			return "", formatError(err, "reading value for variable \"" + name + "\"")
+			return "", formatError(err, "reading value for variable \""+name+"\"")
 		}
 		value = string(byteVal)
 	} else {
 		return "", formatError(errors.New("no value or filename provided"),
-			"finding value for variable \"" + name + "\"")
+			"finding value for variable \""+name+"\"")
 	}
 	return value, nil
 }

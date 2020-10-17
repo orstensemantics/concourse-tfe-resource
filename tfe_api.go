@@ -68,4 +68,3 @@ func getWorkspaceOutputs() (map[string]outputStateV4, error) {
 	}
 	return getRootOutputs(stateFile)
 }
-

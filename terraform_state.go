@@ -47,7 +47,7 @@ type (
 	}
 )
 
-func getRootOutputs(stateFile []byte) (map[string]outputStateV4, error)  {
+func getRootOutputs(stateFile []byte) (map[string]outputStateV4, error) {
 	var s stateVersion
 	if err := json.Unmarshal(stateFile, &s); err != nil {
 		return nil, formatError(err, "decoding state file")
