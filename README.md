@@ -107,7 +107,7 @@ hcl|`false`|If `true`, the variable will be treated as
         message: Name of Build in Terraform Cloud # optional
 ```
 
-###Message Variables
+### Message Variables
 
 The `message` and `apply_message` variables support interpolations via [drone/envsubst](https://github.com/drone/envsubst).
 The table below lists the available variables. Most bash string replacement functions are supported (see the link for more details).
