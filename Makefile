@@ -13,6 +13,7 @@ test: makemocks
 	golint
 	gofmt -d .
 	go vet .
+	gocyclo -over 14 .
 	rm -r test_output || true
 	go test -v -coverprofile cover.out -covermode=atomic
 	go tool cover -html=cover.out -o coverage.html
