@@ -37,7 +37,9 @@ a non-zero status if the run didn't end with a successful apply or a plan with n
  ```shell script
  $ cat your_run/metadata.json | jq -e '.final_status | IN(["applied","planned_and_finished"], .)'
  ```
-
+* If the run requires confirmation to apply and `confirm` is `true`, get will apply the run.
+    * This is determined by the `actions.is-confirmable` attribute of the run and *not* the auto-apply setting of the
+    workspace, so this will apply to runs created by workspace triggers
 * Workspace variables, environment variables and state outputs will be retrieved:
     * **IMPORTANT** - the values returned will be the current ones, even if the provided run ID is not the latest.
     * `./vars` will hold a file for each workspace variable, containing the *current* value of the variable. HCL
@@ -52,27 +54,37 @@ a non-zero status if the run didn't end with a successful apply or a plan with n
     * `./metadata.json` will contain the same metadata values visible in the resource version.
 
 #### Parameters
-Name|Required|Description|Default
----|---|---|---|
-polling_period|No|How many seconds to wait between API calls while waiting for runs to reach final states when getting a run.|5
-sensitive|No|Whether to include values for sensitive outputs.
+Name|Description|Default
+---|---|---|
+polling_period|How many seconds to wait between API calls while waiting for runs to reach final states when getting a run.|5
+sensitive|Whether to include values for sensitive outputs.|`false`
+confirm|If true and the workspace requires confirmation, the run will be confirmed.|`false`
+apply_message|Comment to include while confirming the run. See below for available variables.|
 
 ### `out` - Push variables and create run
 
-* Any provided variables will be pushed to the workspace, and a run will be queued.
-* If the workspace is configured to auto-apply, put will return immediately. If the provided API token does not have apply permission,
-the subsequent get will not complete until the run is confirmed manually.
-* If the workspace requires manual confirmation and `confirm` is false, out will return and the subsequent get will
-wait for manual confirmation
-* If the workspace requires manual confirmation and `confirm` is true, out will wait until the run enters
-a waiting state (`planned`, `cost_estimated`, `policy_checked`), out will apply the run and return. 
+* Any provided variables will be pushed to the workspace
+* A run will be queued.
 
 #### Parameters
-Name|Required|Description
+Name|Description
+---|---
+vars|A map of workspace variables to push.
+message|Message to describe the run. Defaults to "Queued by ${pipeline}/${job} (${number})". See below for available variables.
+
+#### Variable Parameters
+
+At least one of `value` or `file` must be set for every entry. All others are optional.
+
+Name|Default|Description
 ---|---|---
-vars|No|A map of workspace variables to push. See below.
-env_vars|No|A map of environment variables to push. See below.
-confirm|No|If true and the workspace requires confirmation, the run will be confirmed. Defaults to `false`
+value| |A string value for the variable. Takes precedence over `file`.
+file| |Relative path to a file containing a value to set. Ignored if `value` is set.
+description| |A description of the variable.
+category|`terraform`|Change to `env` to push an environment variable instead of a terraform variable. Only `terraform` and `env` are valid.
+sensitive|`false`|If `true`, the variable value will be hidden
+hcl|`false`|If `true`, the variable will be treated as
+
 
 #### Example
 
@@ -88,13 +100,22 @@ confirm|No|If true and the workspace requires confirmation, the run will be conf
             description: a description # optional 
             sensitive: true # optional, default is false
             hcl: true # optional, default is false
-        env_vars:
           MY_ENV_VAR:
             value: a value
             file: someoutput/filename
-            description: a description # optional 
-            sensitive: true # optional, default is false
-        confirm: true # optional, default is false, see above
+            category: env
         message: Name of Build in Terraform Cloud # optional
-        # default message is "Queued by {pipeline_name}/{job_name} ({build_number})" 
 ```
+
+###Message Variables
+The `message` and `apply_message` variables support interpolations via [drone/envsubst](https://github.com/drone/envsubst).
+The table below lists the available variables. Most bash string replacement functions are supported (see the link for more details).
+
+Variable|Description|Concourse Environment Variable
+---|---|---
+url|The base URL of the concourse server.|ATC_EXTERNAL_URL
+team|The name of the team owning the pipeline. |BUILD_TEAM_NAME
+pipeline|The name of the pipeline.|BUILD_PIPELINE_NAME
+job|The name of the job.|BUILD_JOB_NAME
+number|The number of the build (e.g., 14.2)|BUILD_NAME
+id|The concourse internal build ID.|BUILD_ID

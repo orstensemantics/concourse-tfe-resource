@@ -6,29 +6,19 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-tfe"
 	"log"
+	"math"
 	"os"
+	"path"
 	"testing"
-	"time"
 )
 
-func TestIn(t *testing.T) {
+func inSetup() (inputJSON, tfe.VariableList, tfe.StateVersion, map[string]outputStateV4, []byte) {
 	input := inputJSON{
 		Source: sourceJSON{
-			Workspace: workspace.ID,
+			Workspace: "foo",
 		},
 		Version: version{
 			Ref: "bar",
-		},
-	}
-	theTime := time.Now()
-	run := tfe.Run{
-		ID:        "bar",
-		Status:    tfe.RunPending,
-		Message:   "test run",
-		CreatedAt: theTime,
-		CostEstimate: &tfe.CostEstimate{
-			DeltaMonthlyCost:    "+a billion dollars",
-			ProposedMonthlyCost: "a few cents",
 		},
 	}
 
@@ -52,13 +42,17 @@ func TestIn(t *testing.T) {
 		ValueRaw:  []byte("\"secretbar\""),
 		Sensitive: true,
 	}
-	version4State, err := json.Marshal(stateV4{
+	version4State, _ := json.Marshal(stateV4{
 		Version:     4,
 		RootOutputs: outputVars,
 	})
-	if err != nil {
-		log.Fatalf("failed to marshal v4 state file: %s", err)
-	}
+
+	return input, vars, sv, outputVars, version4State
+}
+
+func TestIn(t *testing.T) {
+	input, vars, sv, outputVars, version4State := inSetup()
+
 	version2State, err := json.Marshal(stateV2{
 		Version: 2,
 		Modules: []*moduleStateV2{
@@ -70,24 +64,32 @@ func TestIn(t *testing.T) {
 	}
 
 	wd, _ := os.Getwd()
+	wd = path.Join(wd, "test_output")
 
 	t.Run("no params state version 2", func(t *testing.T) {
-		setup(t)
+		run := setup(t)
+		run.Actions.IsConfirmable = true
+		run.HasChanges = true
 		firstCall := true
-		runs.EXPECT().Read(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(
+		secondCall := true
+		runs.EXPECT().Read(gomock.Any(), gomock.Any()).Times(3).DoAndReturn(
 			func(_ interface{}, _ string) (*tfe.Run, error) {
 				if firstCall {
 					firstCall = false
+				} else if secondCall {
+					secondCall = false
+					run.Status = tfe.RunPlanned
 				} else {
 					run.Status = tfe.RunApplied
 				}
 				return &run, nil
 			})
+		runs.EXPECT().Apply(gomock.Any(), run.ID, gomock.Any()).Return(nil)
 		variables.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(&vars, nil)
 		stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, nil)
 		stateVersions.EXPECT().Download(gomock.Any(), "downloadurl").Return(version2State, nil)
 
-		workingDirectory = fmt.Sprintf("%s/%s", wd, "testInV2NoParams")
+		workingDirectory = path.Join(wd, "test_in_v2_no_params")
 		os.MkdirAll(workingDirectory, os.FileMode(0755))
 
 		output, err := in(input)
@@ -100,20 +102,20 @@ func TestIn(t *testing.T) {
 		for _, v := range vars.Items {
 			var fileName string
 			if v.Category == tfe.CategoryEnv {
-				fileName = fmt.Sprintf("%s/env_vars/%s", workingDirectory, v.Key)
+				fileName = path.Join(workingDirectory, "env_vars", v.Key)
 			} else if v.HCL {
-				fileName = fmt.Sprintf("%s/vars/hcl/%s", workingDirectory, v.Key)
+				fileName = path.Join(workingDirectory, "vars", "hcl", v.Key)
 			} else {
-				fileName = fmt.Sprintf("%s/vars/%s", workingDirectory, v.Key)
+				fileName = path.Join(workingDirectory, "vars", v.Key)
 			}
 			validateFileContents(t, fileName, v.Value)
 
 		}
 		// non-sensitive var should have its value
-		validateFileContents(t, fmt.Sprintf("%s/outputs/foo", workingDirectory), "\"foo\"")
+		validateFileContents(t, path.Join(workingDirectory, "outputs", "foo"), "\"foo\"")
 		// sensitive var should be empty
-		validateFileContents(t, fmt.Sprintf("%s/outputs/bar", workingDirectory), "")
-		if _, err := os.Stat(fmt.Sprintf("%s/outputs.json", workingDirectory)); os.IsNotExist(err) {
+		validateFileContents(t, path.Join(workingDirectory, "outputs", "bar"), "")
+		if _, err := os.Stat(path.Join(workingDirectory, "outputs.json")); os.IsNotExist(err) {
 			t.Error("output json file doesn't exist/is in the wrong place")
 		}
 		for _, v := range result.Metadata {
@@ -123,13 +125,14 @@ func TestIn(t *testing.T) {
 		}
 	})
 	t.Run("sensitive values, state version 4", func(t *testing.T) {
-		setup(t)
+		run := setup(t)
+		run.Status = tfe.RunPlannedAndFinished
 		runs.EXPECT().Read(gomock.Any(), gomock.Any()).Return(&run, nil)
 		variables.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(&vars, nil)
 		stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, nil)
 		stateVersions.EXPECT().Download(gomock.Any(), "downloadurl").Return(version4State, nil)
 
-		workingDirectory = fmt.Sprintf("%s/%s", wd, "testInV4Sensitive")
+		workingDirectory = path.Join(wd, "test_in_v4_sensitive")
 		os.MkdirAll(workingDirectory, os.FileMode(0755))
 
 		input.Params.Sensitive = true
@@ -138,10 +141,10 @@ func TestIn(t *testing.T) {
 			t.Error(err)
 		}
 
-		validateFileContents(t, fmt.Sprintf("%s/outputs/bar", workingDirectory), "\"secretbar\"")
+		validateFileContents(t, path.Join(workingDirectory, "outputs", "bar"), "\"secretbar\"")
 	})
 	t.Run("error retrieving run", func(t *testing.T) {
-		setup(t)
+		run := setup(t)
 		runs.EXPECT().Read(gomock.Any(), gomock.Any()).Return(&run, fmt.Errorf("foo"))
 
 		_, err := in(input)
@@ -149,6 +152,76 @@ func TestIn(t *testing.T) {
 			t.Errorf("unexpected error: %s", err)
 		}
 	})
+}
+
+func TestWritingFunctionErrors(t *testing.T) {
+	run := setup(t)
+	input, vars, sv, _, version4State := inSetup()
+
+	wd, _ := os.Getwd()
+	workingDirectory = path.Join(wd, "test_output", "test_unwriteable")
+	os.MkdirAll(workingDirectory, os.FileMode(0444))
+
+	err := writeStateOutputs(true)
+	if didntErrorWithSubstr(err, "creating run output directory") {
+		t.Errorf("expected error creating directory, got %s", err)
+	}
+	_ = os.Chmod(workingDirectory, os.FileMode(0755))
+	_ = os.MkdirAll(path.Join(workingDirectory, "outputs"), os.FileMode(0555))
+	_ = os.Chmod(workingDirectory, os.FileMode(0555))
+	stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, fmt.Errorf("NO"))
+	err = writeStateOutputs(true)
+	if didntErrorWithSubstr(err, "retrieving workspace state") {
+		t.Errorf("expected error retrieving state, got %s", err)
+	}
+	stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, nil)
+	stateVersions.EXPECT().Download(gomock.Any(), "downloadurl").Return(version4State, nil)
+	err = writeStateOutputs(true)
+	if didntErrorWithSubstr(err, "creating ") {
+		t.Errorf("expected error creating output file, got %s", err)
+	}
+
+	variables.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(&vars, nil)
+	err = writeWorkspaceVariables()
+	if didntErrorWithSubstr(err, "creating output directories") {
+		t.Errorf("expected error creating directory, got %s", err)
+	}
+	_ = os.Chmod(workingDirectory, os.FileMode(0755))
+	_ = os.MkdirAll(path.Join(workingDirectory, "vars", "hcl"), os.FileMode(0444))
+	_ = os.MkdirAll(path.Join(workingDirectory, "env_vars"), os.FileMode(0444))
+	_ = os.Chmod(workingDirectory, os.FileMode(0444))
+	variables.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(&vars, fmt.Errorf("NO"))
+	err = writeWorkspaceVariables()
+	if didntErrorWithSubstr(err, "retrieving workspace variables") {
+		t.Errorf("expected error listing vars, got %s", err)
+	}
+	variables.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(&vars, nil)
+	err = writeWorkspaceVariables()
+	if didntErrorWithSubstr(err, "creating ") {
+		t.Errorf("expected error writing var file, got %s", err)
+	}
+
+	err = writeJSONFile(math.Inf(1), "infinite.json")
+	if didntErrorWithSubstr(err, "marshaling infinite.json") {
+		t.Errorf("expected marshalling error, got %s", err)
+	}
+	err = writeJSONFile(input, "infinite.json")
+	if didntErrorWithSubstr(err, "creating ") {
+		t.Errorf("expected marshalling error, got %s", err)
+	}
+
+	run.Status = tfe.RunPlannedAndFinished
+	runs.EXPECT().Read(gomock.Any(), gomock.Any()).Return(&run, nil)
+	if _, err = in(input); didntErrorWithSubstr(err, "creating ") {
+		t.Errorf("expected error writing file, got %s", err)
+	}
+
+	// don't leave files with messed up permissions
+	_ = os.Chmod(workingDirectory, os.FileMode(0755))
+	_ = os.Chmod(path.Join(workingDirectory, "vars"), os.FileMode(0755))
+	_ = os.Chmod(path.Join(workingDirectory, "env_vars"), os.FileMode(0755))
+	_ = os.Chmod(path.Join(workingDirectory, "vars", "hcl"), os.FileMode(0755))
+	_ = os.Chmod(path.Join(workingDirectory, "outputs"), os.FileMode(0755))
 }
 
 func validateFileContents(t *testing.T, fileName string, expectedValue string) {

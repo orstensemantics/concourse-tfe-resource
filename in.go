@@ -6,23 +6,14 @@ import (
 	"github.com/hashicorp/go-tfe"
 	"log"
 	"os"
+	"path"
 	"time"
 )
 
 func in(input inputJSON) ([]byte, error) {
-	var run *tfe.Run
-	var err error
-	for {
-		run, err = client.Runs.Read(context.Background(), input.Version.Ref)
-		if err != nil {
-			return nil, formatError(err, "retrieving run")
-		}
-		if finished(run) {
-			break
-		} else {
-			log.Printf("Run still in progress (status = %s)", run.Status)
-			time.Sleep(time.Duration(input.Params.PollingPeriod) * time.Second)
-		}
+	run, err := waitForRun(input)
+	if err != nil {
+		return nil, err
 	}
 
 	output := inOutputJSON{Version: version{Ref: input.Version.Ref}}
@@ -36,6 +27,27 @@ func in(input inputJSON) ([]byte, error) {
 		return nil, err
 	}
 	return json.Marshal(output)
+}
+
+func waitForRun(input inputJSON) (*tfe.Run, error) {
+	var run *tfe.Run
+	for {
+		var err error
+		run, err = client.Runs.Read(context.Background(), input.Version.Ref)
+		if err != nil {
+			return run, formatError(err, "retrieving run")
+		}
+		if needsConfirmation(run) {
+			client.Runs.Apply(context.Background(), input.Version.Ref, tfe.RunApplyOptions{Comment: &input.Params.ApplyMessage})
+		}
+		if finished(run) {
+			break
+		} else {
+			log.Printf("Run still in progress (status = %s)", run.Status)
+			time.Sleep(time.Duration(input.Params.PollingPeriod) * time.Second)
+		}
+	}
+	return run, nil
 }
 
 func writeOutputDirectory(input inputJSON, metadataMap map[string]string) error {
@@ -52,7 +64,7 @@ func writeOutputDirectory(input inputJSON, metadataMap map[string]string) error 
 }
 
 func writeStateOutputs(sensitive bool) error {
-	outputDir := workingDirectory + string(os.PathSeparator) + "outputs"
+	outputDir := path.Join(workingDirectory, "outputs")
 	if err := os.MkdirAll(outputDir, os.FileMode(0777)); err != nil {
 		return formatError(err, "creating run output directory")
 	}
@@ -64,7 +76,7 @@ func writeStateOutputs(sensitive bool) error {
 
 	jsonOutput := make(map[string]json.RawMessage)
 	for key, output := range outputs {
-		fileName := outputDir + string(os.PathSeparator) + key
+		fileName := path.Join(outputDir, key)
 		var outputValue json.RawMessage
 		if !output.Sensitive || sensitive {
 			outputValue = output.ValueRaw
@@ -81,9 +93,9 @@ func writeWorkspaceVariables() error {
 	var (
 		vars       tfe.VariableList
 		err        error
-		varsDir    = workingDirectory + string(os.PathSeparator) + "vars"
-		envVarsDir = workingDirectory + string(os.PathSeparator) + "env_vars"
-		hclVarsDir = varsDir + string(os.PathSeparator) + "hcl"
+		varsDir    = path.Join(workingDirectory, "vars")
+		envVarsDir = path.Join(workingDirectory, "env_vars")
+		hclVarsDir = path.Join(varsDir, "hcl")
 	)
 	if vars, err = getVariableList(); err != nil {
 		return err
@@ -99,11 +111,11 @@ func writeWorkspaceVariables() error {
 	for _, v := range vars.Items {
 		var fileName string
 		if v.Category == tfe.CategoryEnv {
-			fileName = envVarsDir + string(os.PathSeparator) + v.Key
+			fileName = path.Join(envVarsDir, v.Key)
 		} else if v.HCL {
-			fileName = hclVarsDir + string(os.PathSeparator) + v.Key
+			fileName = path.Join(hclVarsDir, v.Key)
 		} else {
-			fileName = varsDir + string(os.PathSeparator) + v.Key
+			fileName = path.Join(varsDir, v.Key)
 		}
 		writeAndClose(fileName, []byte(v.Value))
 	}
@@ -116,7 +128,7 @@ func writeJSONFile(contents interface{}, fileName string) error {
 		return formatError(err, "marshaling "+fileName)
 	}
 
-	if err = writeAndClose(workingDirectory+string(os.PathSeparator)+fileName, byteContents); err != nil {
+	if err = writeAndClose(path.Join(workingDirectory, fileName), byteContents); err != nil {
 		return err
 	}
 	return nil

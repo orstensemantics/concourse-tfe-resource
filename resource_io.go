@@ -2,7 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/drone/envsubst"
+	"github.com/hashicorp/go-tfe"
 	"io"
 	"log"
 	"net/url"
@@ -36,20 +39,35 @@ type (
 	outOutputJSON inOutputJSON
 	paramsJSON    struct {
 		Vars          map[string]variableJSON `json:"vars"`
-		EnvVars       map[string]variableJSON `json:"env_vars"`
 		Message       string                  `json:"message"`
 		Confirm       bool                    `json:"confirm"`
 		PollingPeriod int                     `json:"polling_period"`
 		Sensitive     bool                    `json:"sensitive"`
+		ApplyMessage  string                  `json:"apply_message"`
 	}
 	variableJSON struct {
-		File        string `json:"file"`
-		Value       string `json:"value"`
-		Description string `json:"description"`
-		Sensitive   bool   `json:"sensitive"`
-		Hcl         bool   `json:"hcl"`
+		File        string           `json:"file"`
+		Value       string           `json:"value"`
+		Description string           `json:"description"`
+		Category    tfe.CategoryType `json:"category"`
+		Sensitive   bool             `json:"sensitive"`
+		Hcl         bool             `json:"hcl"`
 	}
 )
+
+func (v variableJSON) UnmarshalJSON(b []byte) error {
+	type VJ variableJSON
+	var vj = (*VJ)(&v)
+	vj.Category = tfe.CategoryTerraform
+	if err := json.Unmarshal(b, vj); err != nil {
+		return err
+	}
+	// for some reason this structure includes "policy-set" which you can't set as a variable
+	if v.Category == tfe.CategoryTerraform || v.Category == tfe.CategoryEnv {
+		return nil
+	}
+	return errors.New("invalid variable type")
+}
 
 func getInputs(in io.Reader) (inputJSON, error) {
 	input := inputJSON{}
@@ -57,10 +75,7 @@ func getInputs(in io.Reader) (inputJSON, error) {
 		Address: "https://app.terraform.io",
 	}
 	input.Params = paramsJSON{
-		Message: fmt.Sprintf("Queued by %s/%s (%s)",
-			os.Getenv("BUILD_PIPELINE_NAME"),
-			os.Getenv("BUILD_JOB_NAME"),
-			os.Getenv("BUILD_NAME")),
+		Message:       "Queued by ${pipeline}/${job} (${number})",
 		PollingPeriod: 5,
 		Sensitive:     false,
 	}
@@ -74,6 +89,19 @@ func getInputs(in io.Reader) (inputJSON, error) {
 
 	// a few sanity checks
 	misconfiguration := false
+
+	message, err := parseMessage(input.Params.ApplyMessage)
+	input.Params.ApplyMessage = message
+	if err != nil {
+		log.Printf("error in source configuration: invalid apply message (%s)", err)
+		misconfiguration = true
+	}
+	message, err = parseMessage(input.Params.Message)
+	input.Params.Message = message
+	if err != nil {
+		log.Printf("error in source configuration: invalid run message (%s)", err)
+		misconfiguration = true
+	}
 	if _, err := url.ParseRequestURI(input.Source.Address); err != nil {
 		log.Printf("error in source configuration: \"%v\" is not a valid URL", input.Source.Address)
 		misconfiguration = true
@@ -98,6 +126,28 @@ func getInputs(in io.Reader) (inputJSON, error) {
 		return input, fmt.Errorf("invalid configuration provided")
 	}
 	return input, nil
+}
+
+func parseMessage(message string) (string, error) {
+	// providing access to
+	return envsubst.Eval(message, func(varName string) string {
+		envVar := "NONEXISTENT_VALUE"
+		switch varName {
+		case "id":
+			envVar = "BUILD_ID"
+		case "number":
+			envVar = "BUILD_NAME"
+		case "job":
+			envVar = "BUILD_JOB_NAME"
+		case "pipeline":
+			envVar = "BUILD_PIPELINE_NAME"
+		case "team":
+			envVar = "BUILD_TEAM_NAME"
+		case "url":
+			envVar = "ATC_EXTERNAL_URL"
+		}
+		return os.Getenv(envVar)
+	})
 }
 
 func formatError(err error, context string) error {

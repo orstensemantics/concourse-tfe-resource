@@ -36,3 +36,35 @@ func TestGetWorkspaceOutputs(t *testing.T) {
 		}
 	})
 }
+
+func TestNeedsConfirmation(t *testing.T) {
+	run := setup(t)
+
+	run.Actions.IsConfirmable = true
+	run.HasChanges = true
+	run.Status = tfe.RunPlanned
+	if !needsConfirmation(&run) {
+		t.Error("run in planned with no cost estimation or policy returned false")
+	}
+
+	workspace.Organization.CostEstimationEnabled = true
+	if needsConfirmation(&run) {
+		t.Error("run in planned with cost estimates returned true")
+	}
+	run.Status = tfe.RunCostEstimated
+	if !needsConfirmation(&run) {
+		t.Error("run in cost_estimated with cost estimates returned false")
+	}
+
+	run.PolicyChecks = []*tfe.PolicyCheck{
+		{}, {},
+	}
+	run.Status = tfe.RunPlanned
+	if needsConfirmation(&run) {
+		t.Error("run in planned with policy checks returned true")
+	}
+	run.Status = tfe.RunPolicyChecked
+	if !needsConfirmation(&run) {
+		t.Error("run in policy_checked with policy checks returned false")
+	}
+}

@@ -3,27 +3,15 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"github.com/hashicorp/go-tfe"
 	"os"
+	"path"
 )
 
 func out(input inputJSON) ([]byte, error) {
-	list, err := getVariableList()
-	if err != nil {
+	if err := pushVars(input); err != nil {
 		return nil, err
-	}
-	for k, v := range input.Params.Vars {
-		err := pushVar(list, k, v, false)
-		if err != nil {
-			return nil, err
-		}
-	}
-	for k, v := range input.Params.EnvVars {
-		err := pushVar(list, k, v, true)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	rco := tfe.RunCreateOptions{
@@ -42,7 +30,21 @@ func out(input inputJSON) ([]byte, error) {
 	return json.Marshal(result)
 }
 
-func pushVar(list tfe.VariableList, name string, v variableJSON, isEnv bool) error {
+func pushVars(input inputJSON) error {
+	list, err := getVariableList()
+	if err != nil {
+		return err
+	}
+	for k, v := range input.Params.Vars {
+		err := pushVar(list, k, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func pushVar(list tfe.VariableList, name string, v variableJSON) error {
 	var variable *tfe.Variable
 
 	// see if the variable exists
@@ -71,19 +73,13 @@ func pushVar(list tfe.VariableList, name string, v variableJSON, isEnv bool) err
 			return formatError(err, "updating variable \""+name+"\"")
 		}
 	} else {
-		var category tfe.CategoryType
-		if isEnv {
-			category = tfe.CategoryEnv
-		} else {
-			category = tfe.CategoryTerraform
-		}
 		create := tfe.VariableCreateOptions{
 			Key:         &name,
 			Value:       &value,
 			HCL:         &v.Hcl,
 			Sensitive:   &v.Sensitive,
 			Description: &v.Description,
-			Category:    &category,
+			Category:    &v.Category,
 		}
 		_, err := client.Variables.Create(context.Background(), workspace.ID, create)
 		if err != nil {
@@ -98,14 +94,14 @@ func getValue(v variableJSON, name string) (string, error) {
 	if v.Value != "" {
 		value = v.Value
 	} else if v.File != "" {
-		fileName := workingDirectory + string(os.PathSeparator) + v.File
+		fileName := path.Join(workingDirectory, v.File)
 		f, err := os.Open(fileName)
 		if err != nil {
 			return "", formatError(err, "getting value for variable \""+name+"\"")
 		}
 		s, err := f.Stat()
 		if err != nil {
-			return "", formatError(err, "getting stat value file for variable \""+name+"\"")
+			return "", formatError(err, "statting file for variable \""+name+"\"")
 		}
 		byteVal := make([]byte, s.Size())
 		if _, err = f.Read(byteVal); err != nil {
@@ -113,8 +109,7 @@ func getValue(v variableJSON, name string) (string, error) {
 		}
 		value = string(byteVal)
 	} else {
-		return "", formatError(errors.New("no value or filename provided"),
-			"finding value for variable \""+name+"\"")
+		return "", fmt.Errorf("error finding value for variable \"%s\": no value or filename provided", name)
 	}
 	return value, nil
 }

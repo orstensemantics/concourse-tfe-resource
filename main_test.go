@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"path"
 	"strings"
 	"testing"
 )
@@ -58,10 +59,10 @@ func TestRealMain(t *testing.T) {
 	}
 
 	wd, _ := os.Getwd()
-	_ = os.Mkdir(wd+string(os.PathSeparator)+"testMainIn", os.FileMode(0755))
+	_ = os.Mkdir(path.Join(wd, "test_output", "test_main_in"), os.FileMode(0755))
 	run := make([]version, 1)
 	_ = json.Unmarshal(output, &run)
-	args = []string{"in", "testMainIn"}
+	args = []string{"in", path.Join("test_output", "test_main_in")}
 	input.Version = version{Ref: run[0].Ref}
 	byteInput, _ = json.Marshal(input)
 	_, err = realMain(args, bytes.NewReader(byteInput))

@@ -7,7 +7,7 @@ import (
 )
 
 func finished(run *tfe.Run) bool {
-	endStates := [...]tfe.RunStatus{
+	endStates := []tfe.RunStatus{
 		tfe.RunApplied,
 		tfe.RunCanceled,
 		tfe.RunDiscarded,
@@ -21,6 +21,24 @@ func finished(run *tfe.Run) bool {
 		}
 	}
 	return false
+}
+
+func needsConfirmation(run *tfe.Run) bool {
+	if !run.Actions.IsConfirmable {
+		// the run doesn't need confirmation
+		return false
+	} else if len(run.PolicyChecks) > 0 {
+		// if there are sentinel checks, we want to apply after they pass
+		return run.Status == tfe.RunPolicyChecked
+	} else if workspace.Organization.CostEstimationEnabled {
+		// otherwise if cost estimation is enabled, we want to confirm after the estimation
+		return run.Status == tfe.RunCostEstimated
+	} else {
+		// if none of that is going on, we want to confirm after planning
+		// long ago, there was no planned_and_finished state and runs with no changes ended in the planned
+		// state; I'm not sure if it's still possible for a run to be "planned" with no changes but this can't hurt?
+		return run.Status == tfe.RunPlanned && run.HasChanges
+	}
 }
 
 func runMetadata(input inputJSON, run *tfe.Run) (metadata []versionMetadata) {
@@ -37,7 +55,9 @@ func runMetadata(input inputJSON, run *tfe.Run) (metadata []versionMetadata) {
 		metadata = append(metadata, versionMetadata{Value: run.CostEstimate.DeltaMonthlyCost, Name: "cost_delta"})
 	}
 
-	// TODO add run source metadata a'la terraform cloud ui
+	// TODO add VCS source info if go-tfe ever supports it
+	metadata = append(metadata, versionMetadata{Value: string(run.ConfigurationVersion.Source), Name: "configuration_source"})
+
 	return
 }
 

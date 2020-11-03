@@ -6,12 +6,14 @@ build:
 	ln -s check out || true
 
 makemocks:
-	mkdir -p mock-go-tfe mock-log
+	mkdir -p mock-go-tfe
 	mockgen github.com/hashicorp/go-tfe Workspaces,Runs,Variables,StateVersions > mock-go-tfe/mocks.go
 
 test: makemocks
 	golint
-	rm -r testIn* || true
+	gofmt -d .
+	go vet .
+	rm -r test_output || true
 	go test -v -coverprofile cover.out -covermode=atomic
 	go tool cover -html=cover.out -o coverage.html
 
