@@ -88,48 +88,51 @@ func getInputs(in io.Reader) (inputJSON, error) {
 	}
 
 	// a few sanity checks
-	misconfiguration := false
-
-	message, err := parseMessage(input.Params.ApplyMessage)
-	input.Params.ApplyMessage = message
-	if err != nil {
-		log.Printf("error in source configuration: invalid apply message (%s)", err)
-		misconfiguration = true
-	}
-	message, err = parseMessage(input.Params.Message)
-	input.Params.Message = message
-	if err != nil {
-		log.Printf("error in source configuration: invalid run message (%s)", err)
-		misconfiguration = true
-	}
-	if _, err := url.ParseRequestURI(input.Source.Address); err != nil {
-		log.Printf("error in source configuration: \"%v\" is not a valid URL", input.Source.Address)
-		misconfiguration = true
-	}
-	if input.Source.Workspace == "" {
-		log.Print("error in source configuration: workspace is not set")
-		misconfiguration = true
-	}
-	if input.Source.Organization == "" {
-		log.Print("error in source configuration: organization is not set")
-		misconfiguration = true
-	}
-	if input.Source.Token == "" {
-		log.Print("error in source configuration: token is not set")
-		misconfiguration = true
-	}
-	if input.Params.PollingPeriod < 1 {
-		log.Print("error in parameter value: polling_period must be at least 1 second")
-		misconfiguration = true
-	}
-	if misconfiguration {
+	if !validateInput(&input) {
 		return input, fmt.Errorf("invalid configuration provided")
 	}
 	return input, nil
 }
 
+func validateInput(input *inputJSON) (validConfig bool) {
+	validConfig = true
+
+	message, err := parseMessage(input.Params.ApplyMessage)
+	input.Params.ApplyMessage = message
+	if err != nil {
+		log.Printf("error in source configuration: invalid apply message (%s)", err)
+		validConfig = false
+	}
+	message, err = parseMessage(input.Params.Message)
+	input.Params.Message = message
+	if err != nil {
+		log.Printf("error in source configuration: invalid run message (%s)", err)
+		validConfig = false
+	}
+	if _, err := url.ParseRequestURI(input.Source.Address); err != nil {
+		log.Printf("error in source configuration: \"%v\" is not a valid URL", input.Source.Address)
+		validConfig = false
+	}
+	if input.Source.Workspace == "" {
+		log.Print("error in source configuration: workspace is not set")
+		validConfig = false
+	}
+	if input.Source.Organization == "" {
+		log.Print("error in source configuration: organization is not set")
+		validConfig = false
+	}
+	if input.Source.Token == "" {
+		log.Print("error in source configuration: token is not set")
+		validConfig = false
+	}
+	if input.Params.PollingPeriod < 1 {
+		log.Print("error in parameter value: polling_period must be at least 1 second")
+		validConfig = false
+	}
+	return validConfig
+}
+
 func parseMessage(message string) (string, error) {
-	// providing access to
 	return envsubst.Eval(message, func(varName string) string {
 		envVar := "NONEXISTENT_VALUE"
 		switch varName {

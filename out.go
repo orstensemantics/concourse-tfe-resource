@@ -99,10 +99,7 @@ func getValue(v variableJSON, name string) (string, error) {
 		if err != nil {
 			return "", formatError(err, "getting value for variable \""+name+"\"")
 		}
-		s, err := f.Stat()
-		if err != nil {
-			return "", formatError(err, "statting file for variable \""+name+"\"")
-		}
+		s, _ := f.Stat()
 		byteVal := make([]byte, s.Size())
 		if _, err = f.Read(byteVal); err != nil {
 			return "", formatError(err, "reading value for variable \""+name+"\"")
