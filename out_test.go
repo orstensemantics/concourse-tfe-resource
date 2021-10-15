@@ -43,7 +43,7 @@ func TestOutVars(t *testing.T) {
 		Category:    tfe.CategoryEnv,
 	}
 	vars["NEW_ENV_VAR"] = variableJSON{
-		File:     ".gitignore",
+		File:     "../../.gitignore",
 		Category: tfe.CategoryEnv,
 	}
 

@@ -120,3 +120,13 @@ pipeline|The name of the pipeline.|BUILD_PIPELINE_NAME
 job|The name of the job.|BUILD_JOB_NAME
 number|The number of the build (e.g., 14.2)|BUILD_NAME
 id|The concourse internal build ID.|BUILD_ID
+
+### Running Tests
+
+To run the tests, the following environment variables need to be set:
+
+Variable|Description
+---|---
+`TFE_WORKSPACE`|The name of the workspace to use for test runs.
+`TFE_ORGANIZATION`|The name of the organization containing the workspace.
+`TFE_ADDRESS`|The URL to Terraform Cloud/Enterprise. If you don't have one, set to `https://app.terraform.io`.

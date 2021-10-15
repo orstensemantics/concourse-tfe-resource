@@ -14,6 +14,7 @@ test: makemocks
 	gofmt -d .
 	go vet .
 	gocyclo -over 14 .
+	chmod -R +w test_output || true
 	rm -r test_output || true
 	go test -v -coverprofile cover.out -covermode=atomic
 	go tool cover -html=cover.out -o coverage.html

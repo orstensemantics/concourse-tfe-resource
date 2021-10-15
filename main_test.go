@@ -28,8 +28,8 @@ func TestStartup(t *testing.T) {
 		t.Errorf("no/bad error without org/workspace set: %s", err)
 	}
 
-	input.Source.Workspace = "tfe-resource-test"
-	input.Source.Organization = "orstensemantics"
+	input.Source.Workspace = os.Getenv("TFE_WORKSPACE")
+	input.Source.Organization = os.Getenv("TFE_ORGANIZATION")
 
 	err = startup(input)
 	if err != nil {

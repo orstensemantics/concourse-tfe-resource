@@ -36,11 +36,11 @@ func pushVars(input inputJSON) error {
 		return err
 	}
 	for k, v := range input.Params.Vars {
-		err := pushVar(list, k, v)
-		if err != nil {
+		if err := pushVar(list, k, v); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -56,6 +56,7 @@ func pushVar(list tfe.VariableList, name string, v variableJSON) error {
 	}
 
 	value, err := getValue(v, name)
+
 	if err != nil {
 		return err
 	}
