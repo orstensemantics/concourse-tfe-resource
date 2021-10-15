@@ -77,7 +77,6 @@ func writeStateOutputs(sensitive bool) error {
 	jsonOutput := make(map[string]json.RawMessage)
 	for _, output := range outputs {
 		key := output.Name
-		log.Printf("output name: %v", output)
 		fileName := path.Join(outputDir, key)
 		var outputValue json.RawMessage
 		if !output.Sensitive || sensitive {
