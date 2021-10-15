@@ -4,3 +4,5 @@ out
 check
 cover.out
 coverage.html
+mock-go-tfe
+test_output

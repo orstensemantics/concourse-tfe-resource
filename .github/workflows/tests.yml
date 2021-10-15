@@ -24,15 +24,12 @@ jobs:
 
       - name: Get dependencies
         run: |
-          go get -v -t -d ./...
-          GO111MODULE=on go get github.com/golang/mock/mockgen
-          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 --output cc-test-reporter
-          chmod +x cc-test-reporter
-
-      - name: Create mocks
-        run: |
+          GO111MODULE=on go get github.com/golang/mock/mockgen github.com/hashicorp/go-tfe
           mkdir -p mock-go-tfe
           mockgen github.com/hashicorp/go-tfe Workspaces,Runs,Variables,StateVersions > mock-go-tfe/mocks.go
+          go get -v -t -d ./...
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 --output cc-test-reporter
+          chmod +x cc-test-reporter
 
       - name: Run tests
         env:
