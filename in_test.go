@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-tfe"
-	"log"
 	"math"
 	"os"
 	"path"
 	"testing"
 )
 
-func inSetup() (inputJSON, tfe.VariableList, tfe.StateVersion, map[string]outputStateV4, []byte) {
+func inSetup() (inputJSON, tfe.VariableList, tfe.StateVersion, []*tfe.StateVersionOutput) {
 	input := inputJSON{
 		Source: sourceJSON{
 			Workspace: "foo",
@@ -28,45 +27,37 @@ func inSetup() (inputJSON, tfe.VariableList, tfe.StateVersion, map[string]output
 		{Key: "ENV_VAR", ID: "var-345", Category: tfe.CategoryEnv, Value: "KEY"},
 	}}
 
+	ov := []tfe.StateVersionOutput{
+		tfe.StateVersionOutput{
+			Name:      "foo",
+			Value:     "foo",
+			Sensitive: false,
+		},
+		tfe.StateVersionOutput{
+			Name:      "bar",
+			Value:     "secretbar",
+			Sensitive: true,
+		},
+	}
+	outputVars := []*tfe.StateVersionOutput{
+		&ov[0],
+		&ov[1],
+	}
 	sv := tfe.StateVersion{
 		ID:          "stateversion",
-		DownloadURL: "downloadurl",
+		Outputs:     outputVars,
 	}
 
-	outputVars := make(map[string]outputStateV4)
-	outputVars["foo"] = outputStateV4{
-		ValueRaw:  []byte("\"foo\""),
-		Sensitive: false,
-	}
-	outputVars["bar"] = outputStateV4{
-		ValueRaw:  []byte("\"secretbar\""),
-		Sensitive: true,
-	}
-	version4State, _ := json.Marshal(stateV4{
-		Version:     4,
-		RootOutputs: outputVars,
-	})
-
-	return input, vars, sv, outputVars, version4State
+	return input, vars, sv, outputVars
 }
 
 func TestIn(t *testing.T) {
-	input, vars, sv, outputVars, version4State := inSetup()
-
-	version2State, err := json.Marshal(stateV2{
-		Version: 2,
-		Modules: []*moduleStateV2{
-			{Outputs: outputVars},
-		},
-	})
-	if err != nil {
-		log.Fatalf("failed to marshal v2 state file")
-	}
+	input, vars, sv, _ := inSetup()
 
 	wd, _ := os.Getwd()
 	wd = path.Join(wd, "test_output")
 
-	t.Run("no params state version 2", func(t *testing.T) {
+	t.Run("no params", func(t *testing.T) {
 		run := setup(t)
 		run.Actions.IsConfirmable = true
 		run.HasChanges = true
@@ -86,10 +77,9 @@ func TestIn(t *testing.T) {
 			})
 		runs.EXPECT().Apply(gomock.Any(), run.ID, gomock.Any()).Return(nil)
 		variables.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(&vars, nil)
-		stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, nil)
-		stateVersions.EXPECT().Download(gomock.Any(), "downloadurl").Return(version2State, nil)
+		stateVersions.EXPECT().CurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, nil)
 
-		workingDirectory = path.Join(wd, "test_in_v2_no_params")
+		workingDirectory = path.Join(wd, "test_in_no_params")
 		os.MkdirAll(workingDirectory, os.FileMode(0755))
 
 		output, err := in(input)
@@ -124,15 +114,14 @@ func TestIn(t *testing.T) {
 			}
 		}
 	})
-	t.Run("sensitive values, state version 4", func(t *testing.T) {
+	t.Run("sensitive values", func(t *testing.T) {
 		run := setup(t)
 		run.Status = tfe.RunPlannedAndFinished
 		runs.EXPECT().Read(gomock.Any(), gomock.Any()).Return(&run, nil)
 		variables.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(&vars, nil)
-		stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, nil)
-		stateVersions.EXPECT().Download(gomock.Any(), "downloadurl").Return(version4State, nil)
+		stateVersions.EXPECT().CurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, nil)
 
-		workingDirectory = path.Join(wd, "test_in_v4_sensitive")
+		workingDirectory = path.Join(wd, "test_in_sensitive")
 		os.MkdirAll(workingDirectory, os.FileMode(0755))
 
 		input.Params.Sensitive = true
@@ -156,7 +145,7 @@ func TestIn(t *testing.T) {
 
 func TestWritingFunctionErrors(t *testing.T) {
 	run := setup(t)
-	input, vars, sv, _, version4State := inSetup()
+	input, vars, sv, _ := inSetup()
 
 	wd, _ := os.Getwd()
 	workingDirectory = path.Join(wd, "test_output", "test_unwriteable")
@@ -169,13 +158,12 @@ func TestWritingFunctionErrors(t *testing.T) {
 	_ = os.Chmod(workingDirectory, os.FileMode(0755))
 	_ = os.MkdirAll(path.Join(workingDirectory, "outputs"), os.FileMode(0555))
 	_ = os.Chmod(workingDirectory, os.FileMode(0555))
-	stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, fmt.Errorf("NO"))
+	stateVersions.EXPECT().CurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, fmt.Errorf("NO"))
 	err = writeStateOutputs(true)
-	if didntErrorWithSubstr(err, "retrieving workspace state") {
+	if didntErrorWithSubstr(err, "getting current workspace state") {
 		t.Errorf("expected error retrieving state, got %s", err)
 	}
-	stateVersions.EXPECT().Current(gomock.Any(), "foo").Return(&sv, nil)
-	stateVersions.EXPECT().Download(gomock.Any(), "downloadurl").Return(version4State, nil)
+	stateVersions.EXPECT().CurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, nil)
 	err = writeStateOutputs(true)
 	if didntErrorWithSubstr(err, "creating ") {
 		t.Errorf("expected error creating output file, got %s", err)

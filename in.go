@@ -75,11 +75,16 @@ func writeStateOutputs(sensitive bool) error {
 	}
 
 	jsonOutput := make(map[string]json.RawMessage)
-	for key, output := range outputs {
+	for _, output := range outputs {
+		key := output.Name
 		fileName := path.Join(outputDir, key)
 		var outputValue json.RawMessage
 		if !output.Sensitive || sensitive {
-			outputValue = output.ValueRaw
+			ov, err := json.Marshal(output.Value)
+			if err != nil {
+				return formatError(err, "marshalling state output")
+			}
+			outputValue = json.RawMessage(ov)
 		}
 		jsonOutput[key] = outputValue
 		if err := writeAndClose(fileName, outputValue); err != nil {

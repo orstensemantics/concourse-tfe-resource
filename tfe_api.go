@@ -77,14 +77,17 @@ func getVariableList() (tfe.VariableList, error) {
 	return vars, nil
 }
 
-func getWorkspaceOutputs() (map[string]outputStateV4, error) {
-	sv, err := client.StateVersions.Current(context.Background(), workspace.ID)
-	if err != nil {
-		return nil, formatError(err, "retrieving workspace state")
+func getWorkspaceOutputs() ([]*tfe.StateVersionOutput, error) {
+	var (
+		sv  *tfe.StateVersion
+		err error
+	)
+	if sv, err = client.StateVersions.CurrentWithOptions(
+		context.Background(),
+		workspace.ID,
+		&tfe.StateVersionCurrentOptions{Include: "outputs"},
+	); err != nil {
+		return nil, formatError(err, "getting current workspace state")
 	}
-	stateFile, err := client.StateVersions.Download(context.Background(), sv.DownloadURL)
-	if err != nil {
-		return nil, formatError(err, "downloading state file")
-	}
-	return getRootOutputs(stateFile)
+	return sv.Outputs, nil
 }
