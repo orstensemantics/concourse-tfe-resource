@@ -10,6 +10,14 @@
 
 Concourse resource for Terraform Cloud and Terraform Enterprise using [Hashicorp's go-tfe library](https://github.com/hashicorp/go-tfe).
 
+## Maintenance Notes
+
+- This resource is effectively feature complete, and no major updates are expected in the near term. If you'd like to see
+a new feature, please create an issue.
+  - If your feature request involves features of paid Terraform Cloud or Terraform Enterprise, you may need to provide
+    access to a workspace for testing, since I only have access to the free Terraform Cloud.
+- Dependabot checks direct dependencies weekly; dependency updates will be released as patch versions.
+
 ## Usage
 ```yaml
 resource_types:
