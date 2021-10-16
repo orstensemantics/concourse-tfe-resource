@@ -1,0 +1,10 @@
+version: 2
+update_configs:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+    allow:
+      - dependency-name: "*"
+        dependency-type: "direct"
