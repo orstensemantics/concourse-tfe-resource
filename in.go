@@ -37,7 +37,7 @@ func waitForRun(input inputJSON) (*tfe.Run, error) {
 		if err != nil {
 			return run, formatError(err, "retrieving run")
 		}
-		if needsConfirmation(run) {
+		if needsConfirmation(run) && input.Params.Confirm {
 			client.Runs.Apply(context.Background(), input.Version.Ref, tfe.RunApplyOptions{Comment: &input.Params.ApplyMessage})
 		}
 		if finished(run) {

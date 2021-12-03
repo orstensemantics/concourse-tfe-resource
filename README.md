@@ -91,7 +91,7 @@ file| |Relative path to a file containing a value to set. Ignored if `value` is 
 description| |A description of the variable.
 category|`terraform`|Change to `env` to push an environment variable instead of a terraform variable. Only `terraform` and `env` are valid.
 sensitive|`false`|If `true`, the variable value will be hidden
-hcl|`false`|If `true`, the variable will be treated as
+hcl|`false`|If `true`, the variable will be treated as HCL
 
 
 #### Example
@@ -131,10 +131,23 @@ id|The concourse internal build ID.|BUILD_ID
 
 ### Running Tests
 
-To run the tests, the following environment variables need to be set:
+The tests include functional tests which list runs, put values, and create/wait for/get a run from a live Terraform 
+Cloud workspace. To run the tests, you will need to set the environment variables below to point to your own testing
+workspace.
+
+My workspace has auto-apply disabled and is linked to a github repository containing a minimal set of HCL to validate
+the resource:
+
+- simple and HCL inputs
+- a null resource with a timestamp trigger
+- simple and HCL outputs
+
+This allows the tests to put a value, await a run which actually needs to apply, and get a complex output (which it
+should successfully render as JSON in its output).
 
 Variable|Description
 ---|---
+`ATLAS_TOKEN`|A valid terraform cloud workspace.
 `TFE_WORKSPACE`|The name of the workspace to use for test runs.
 `TFE_ORGANIZATION`|The name of the organization containing the workspace.
 `TFE_ADDRESS`|The URL to Terraform Cloud/Enterprise. If you don't have one, set to `https://app.terraform.io`.
