@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/drone/envsubst v1.0.3
 	github.com/golang/mock v1.6.0
-	github.com/hashicorp/go-tfe v0.20.0
+	github.com/hashicorp/go-tfe v0.24.0
 )
 
 require (
