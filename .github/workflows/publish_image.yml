@@ -27,4 +27,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: orstensemantics/concourse-tfe-resource:latest orstensemantics/concourse-tfe-resource:${{ github.event.release.tag_name }}
+          tags: orstensemantics/concourse-tfe-resource:latest,orstensemantics/concourse-tfe-resource:${{ github.event.release.tag_name }}
