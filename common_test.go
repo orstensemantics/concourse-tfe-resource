@@ -50,8 +50,9 @@ func setup(t *testing.T) tfe.Run {
 			DeltaMonthlyCost:    "+a billion dollars",
 			ProposedMonthlyCost: "a few cents",
 		},
-		Actions:              &tfe.RunActions{},
+		Actions:              &tfe.RunActions{IsConfirmable: true},
 		ConfigurationVersion: &tfe.ConfigurationVersion{Source: tfe.ConfigurationSourceGithub},
+		HasChanges: 		  true,
 	}
 }
 

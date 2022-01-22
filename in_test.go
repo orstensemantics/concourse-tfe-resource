@@ -19,6 +19,9 @@ func inSetup() (inputJSON, tfe.VariableList, tfe.StateVersion, []*tfe.StateVersi
 		Version: version{
 			Ref: "bar",
 		},
+		Params: paramsJSON{
+			Confirm: true,
+		},
 	}
 
 	vars := tfe.VariableList{Items: []*tfe.Variable{
@@ -44,8 +47,8 @@ func inSetup() (inputJSON, tfe.VariableList, tfe.StateVersion, []*tfe.StateVersi
 		&ov[1],
 	}
 	sv := tfe.StateVersion{
-		ID:          "stateversion",
-		Outputs:     outputVars,
+		ID:      "stateversion",
+		Outputs: outputVars,
 	}
 
 	return input, vars, sv, outputVars
@@ -61,18 +64,12 @@ func TestIn(t *testing.T) {
 		run := setup(t)
 		run.Actions.IsConfirmable = true
 		run.HasChanges = true
-		firstCall := true
-		secondCall := true
+		call := 0
+		statuses := []tfe.RunStatus{tfe.RunPending, tfe.RunPlanned, tfe.RunApplied}
 		runs.EXPECT().Read(gomock.Any(), gomock.Any()).Times(3).DoAndReturn(
 			func(_ interface{}, _ string) (*tfe.Run, error) {
-				if firstCall {
-					firstCall = false
-				} else if secondCall {
-					secondCall = false
-					run.Status = tfe.RunPlanned
-				} else {
-					run.Status = tfe.RunApplied
-				}
+				run.Status = statuses[call]
+				call++
 				return &run, nil
 			})
 		runs.EXPECT().Apply(gomock.Any(), run.ID, gomock.Any()).Return(nil)
