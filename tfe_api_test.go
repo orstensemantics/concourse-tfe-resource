@@ -12,7 +12,7 @@ func TestGetWorkspaceOutputs(t *testing.T) {
 	t.Run("error getting workspace state version", func(t *testing.T) {
 		setup(t)
 
-		stateVersions.EXPECT().CurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(nil, fmt.Errorf("NO"))
+		stateVersions.EXPECT().ReadCurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(nil, fmt.Errorf("NO"))
 
 		result, err := getWorkspaceOutputs()
 
