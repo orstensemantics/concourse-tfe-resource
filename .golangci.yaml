@@ -1,3 +1,2 @@
 run:
-  skip-files:
-    - ".*_test.go"
+  tests: false

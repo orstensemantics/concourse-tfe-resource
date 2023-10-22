@@ -1,4 +1,4 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"encoding/json"
@@ -146,6 +146,7 @@ func TestWritingFunctionErrors(t *testing.T) {
 
 	wd, _ := os.Getwd()
 	workingDirectory = path.Join(wd, "test_output", "test_unwriteable")
+	os.RemoveAll(workingDirectory)
 	os.MkdirAll(workingDirectory, os.FileMode(0444))
 
 	err := writeStateOutputs(true)

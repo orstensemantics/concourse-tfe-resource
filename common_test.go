@@ -1,4 +1,4 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"concourse-tfe-resource/mock-go-tfe"

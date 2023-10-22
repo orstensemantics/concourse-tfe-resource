@@ -1,9 +1,9 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/hashicorp/go-tfe"
+	tfe "github.com/hashicorp/go-tfe"
 )
 
 func check(input inputJSON) ([]byte, error) {

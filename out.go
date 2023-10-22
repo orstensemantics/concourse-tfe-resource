@@ -1,10 +1,10 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/go-tfe"
+	tfe "github.com/hashicorp/go-tfe"
 	"os"
 	"path"
 )

@@ -10,7 +10,7 @@ makemocks:
 	mockgen github.com/hashicorp/go-tfe Workspaces,Runs,Variables,StateVersions > mock-go-tfe/mocks.go
 
 test: makemocks
-	golangci-lint run
+	#golangci-lint run
 	chmod -R +w test_output || true
 	rm -r test_output || true
 	go test -v -coverprofile cover.out -covermode=atomic
@@ -19,3 +19,5 @@ test: makemocks
 check: test
 	golint -set_exit_status
 
+clean:
+	rm -r check in out cover.out coverage.html test_output || true

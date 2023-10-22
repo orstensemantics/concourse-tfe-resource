@@ -1,4 +1,4 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"encoding/json"
