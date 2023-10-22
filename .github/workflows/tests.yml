@@ -24,7 +24,8 @@ jobs:
 
       - name: Get dependencies
         run: |
-          go get github.com/golang/mock/mockgen github.com/hashicorp/go-tfe
+          go install go.uber.org/mock/mockgen@latest
+          go get github.com/hashicorp/go-tfe
           mkdir -p mock-go-tfe
           mockgen github.com/hashicorp/go-tfe Workspaces,Runs,Variables,StateVersions > mock-go-tfe/mocks.go
           go get -v ./...
