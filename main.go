@@ -1,8 +1,8 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"context"
-	"github.com/hashicorp/go-tfe"
+	tfe "github.com/hashicorp/go-tfe"
 	"io"
 	"log"
 	"os"

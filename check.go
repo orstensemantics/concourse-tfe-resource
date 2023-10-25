@@ -1,9 +1,9 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/hashicorp/go-tfe"
+	tfe "github.com/hashicorp/go-tfe"
 )
 
 func check(input inputJSON) ([]byte, error) {
@@ -19,7 +19,7 @@ func check(input inputJSON) ([]byte, error) {
 
 	for {
 		rlo.PageNumber = page
-		runs, err := client.Runs.List(context.Background(), workspace.ID, rlo)
+		runs, err := client.Runs.List(context.Background(), workspace.ID, &rlo)
 		if err != nil {
 			return nil, formatError(err, "listing runs")
 		}

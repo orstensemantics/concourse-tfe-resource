@@ -1,4 +1,4 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"context"
@@ -65,7 +65,7 @@ func getVariableList() (tfe.VariableList, error) {
 	listOptions := tfe.VariableListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 0}}
 	vars := tfe.VariableList{}
 	for {
-		newVars, err := client.Variables.List(context.Background(), workspace.ID, listOptions)
+		newVars, err := client.Variables.List(context.Background(), workspace.ID, &listOptions)
 		if err != nil {
 			return vars, formatError(err, "retrieving workspace variables")
 		}
@@ -82,10 +82,10 @@ func getWorkspaceOutputs() ([]*tfe.StateVersionOutput, error) {
 		sv  *tfe.StateVersion
 		err error
 	)
-	if sv, err = client.StateVersions.CurrentWithOptions(
+	if sv, err = client.StateVersions.ReadCurrentWithOptions(
 		context.Background(),
 		workspace.ID,
-		&tfe.StateVersionCurrentOptions{Include: "outputs"},
+		&tfe.StateVersionCurrentOptions{Include: []tfe.StateVersionIncludeOpt{tfe.SVoutputs}},
 	); err != nil {
 		return nil, formatError(err, "getting current workspace state")
 	}

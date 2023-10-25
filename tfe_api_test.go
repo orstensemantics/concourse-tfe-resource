@@ -1,9 +1,9 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-tfe"
+	"go.uber.org/mock/gomock"
 	"strings"
 	"testing"
 )
@@ -12,7 +12,7 @@ func TestGetWorkspaceOutputs(t *testing.T) {
 	t.Run("error getting workspace state version", func(t *testing.T) {
 		setup(t)
 
-		stateVersions.EXPECT().CurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(nil, fmt.Errorf("NO"))
+		stateVersions.EXPECT().ReadCurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(nil, fmt.Errorf("NO"))
 
 		result, err := getWorkspaceOutputs()
 

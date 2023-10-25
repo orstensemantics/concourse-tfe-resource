@@ -1,10 +1,10 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-tfe"
+	"go.uber.org/mock/gomock"
 	"math"
 	"os"
 	"path"
@@ -74,7 +74,7 @@ func TestIn(t *testing.T) {
 			})
 		runs.EXPECT().Apply(gomock.Any(), run.ID, gomock.Any()).Return(nil)
 		variables.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(&vars, nil)
-		stateVersions.EXPECT().CurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, nil)
+		stateVersions.EXPECT().ReadCurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, nil)
 
 		workingDirectory = path.Join(wd, "test_in_no_params")
 		os.MkdirAll(workingDirectory, os.FileMode(0755))
@@ -116,7 +116,7 @@ func TestIn(t *testing.T) {
 		run.Status = tfe.RunPlannedAndFinished
 		runs.EXPECT().Read(gomock.Any(), gomock.Any()).Return(&run, nil)
 		variables.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).Return(&vars, nil)
-		stateVersions.EXPECT().CurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, nil)
+		stateVersions.EXPECT().ReadCurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, nil)
 
 		workingDirectory = path.Join(wd, "test_in_sensitive")
 		os.MkdirAll(workingDirectory, os.FileMode(0755))
@@ -146,6 +146,7 @@ func TestWritingFunctionErrors(t *testing.T) {
 
 	wd, _ := os.Getwd()
 	workingDirectory = path.Join(wd, "test_output", "test_unwriteable")
+	os.RemoveAll(workingDirectory)
 	os.MkdirAll(workingDirectory, os.FileMode(0444))
 
 	err := writeStateOutputs(true)
@@ -155,12 +156,12 @@ func TestWritingFunctionErrors(t *testing.T) {
 	_ = os.Chmod(workingDirectory, os.FileMode(0755))
 	_ = os.MkdirAll(path.Join(workingDirectory, "outputs"), os.FileMode(0555))
 	_ = os.Chmod(workingDirectory, os.FileMode(0555))
-	stateVersions.EXPECT().CurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, fmt.Errorf("NO"))
+	stateVersions.EXPECT().ReadCurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, fmt.Errorf("NO"))
 	err = writeStateOutputs(true)
 	if didntErrorWithSubstr(err, "getting current workspace state") {
 		t.Errorf("expected error retrieving state, got %s", err)
 	}
-	stateVersions.EXPECT().CurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, nil)
+	stateVersions.EXPECT().ReadCurrentWithOptions(gomock.Any(), "foo", gomock.Any()).Return(&sv, nil)
 	err = writeStateOutputs(true)
 	if didntErrorWithSubstr(err, "creating ") {
 		t.Errorf("expected error creating output file, got %s", err)

@@ -1,9 +1,9 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/hashicorp/go-tfe"
+	tfe "github.com/hashicorp/go-tfe"
 	"log"
 	"os"
 	"path"
@@ -38,7 +38,10 @@ func waitForRun(input inputJSON) (*tfe.Run, error) {
 			return run, formatError(err, "retrieving run")
 		}
 		if needsConfirmation(run) && input.Params.Confirm {
-			client.Runs.Apply(context.Background(), input.Version.Ref, tfe.RunApplyOptions{Comment: &input.Params.ApplyMessage})
+			err = client.Runs.Apply(context.Background(), input.Version.Ref, tfe.RunApplyOptions{Comment: &input.Params.ApplyMessage})
+			if err != nil {
+				return run, formatError(err, "applying run")
+			}
 		}
 		if finished(run) {
 			break
@@ -122,7 +125,9 @@ func writeWorkspaceVariables() error {
 		} else {
 			fileName = path.Join(varsDir, v.Key)
 		}
-		writeAndClose(fileName, []byte(v.Value))
+		if err := writeAndClose(fileName, []byte(v.Value)); err != nil {
+			return err
+		}
 	}
 	return nil
 }

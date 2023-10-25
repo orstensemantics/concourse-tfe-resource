@@ -1,10 +1,10 @@
-package main
+package concourse_tfe_resource
 
 import (
 	"encoding/json"
 	"errors"
-	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-tfe"
+	"go.uber.org/mock/gomock"
 	"strconv"
 	"testing"
 )
@@ -67,8 +67,8 @@ func TestCheckWithVersionOnSecondPage(t *testing.T) {
 
 	rlo1 := tfe.RunListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 0}}
 	rlo2 := tfe.RunListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 1}}
-	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo1)).Return(&firstCall, nil)
-	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo2)).Return(&secondCall, nil)
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(&rlo1)).Return(&firstCall, nil)
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(&rlo2)).Return(&secondCall, nil)
 	input.Version.Ref = "8"
 	output, _ := check(input)
 
@@ -90,8 +90,8 @@ func TestCheckWithNonexistentVersion(t *testing.T) {
 	// if the provided version does not seem to exist, return the current version
 	rlo1 := tfe.RunListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 0}}
 	rlo2 := tfe.RunListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 1}}
-	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo1)).Return(&firstCall, nil)
-	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo2)).Return(&tfe.RunList{}, nil)
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(&rlo1)).Return(&firstCall, nil)
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(&rlo2)).Return(&tfe.RunList{}, nil)
 	input.Version.Ref = "8"
 	output, _ := check(input)
 
@@ -112,7 +112,7 @@ func TestCheckWithFailingListCall(t *testing.T) {
 	input := inputJSON{Source: sourceJSON{Workspace: "foo"}}
 
 	rlo1 := tfe.RunListOptions{ListOptions: tfe.ListOptions{PageSize: 100, PageNumber: 0}}
-	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(rlo1)).Return(&firstCall, errors.New("NO"))
+	runs.EXPECT().List(gomock.Any(), gomock.Eq("foo"), gomock.Eq(&rlo1)).Return(&firstCall, errors.New("NO"))
 	output, err := check(input)
 
 	if output != nil || err == nil || err.Error() != "error listing runs: NO" {
