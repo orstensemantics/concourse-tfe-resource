@@ -19,5 +19,6 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
 	github.com/hashicorp/go-slug v0.12.2 // indirect
 	github.com/hashicorp/jsonapi v0.0.0-20210826224640-ee7dae0fb22d // indirect
+	go.uber.org/mock v0.3.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 )
