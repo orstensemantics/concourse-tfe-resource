@@ -2,8 +2,8 @@ package concourse_tfe_resource
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-tfe"
+	"go.uber.org/mock/gomock"
 	"strings"
 	"testing"
 )

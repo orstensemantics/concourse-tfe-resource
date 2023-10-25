@@ -3,8 +3,8 @@ package concourse_tfe_resource
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/go-tfe"
+	"go.uber.org/mock/gomock"
 	"math"
 	"os"
 	"path"
