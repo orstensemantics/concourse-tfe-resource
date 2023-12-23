@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/drone/envsubst v1.0.3
 	github.com/hashicorp/go-tfe v1.37.0
-	go.uber.org/mock v0.3.0
+	go.uber.org/mock v0.4.0
 )
 
 require (
