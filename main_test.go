@@ -72,6 +72,8 @@ func TestRealMain(t *testing.T) {
 	}
 
 	args[0] = "out"
+	input.Params.Message = "TestRealMain out test"
+	byteInput, _ = json.Marshal(input)
 	_, err = realMain(args, bytes.NewReader(byteInput))
 
 	if err != nil {
