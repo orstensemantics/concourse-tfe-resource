@@ -4,12 +4,12 @@ go 1.19
 
 require (
 	github.com/drone/envsubst v1.0.3
-	github.com/hashicorp/go-tfe v1.54.0
+	github.com/hashicorp/go-tfe v1.62.0
 	go.uber.org/mock v0.4.0
 )
 
 require (
-	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 )
 
