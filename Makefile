@@ -7,7 +7,7 @@ build:
 
 makemocks:
 	mkdir -p mock-go-tfe
-	mockgen github.com/hashicorp/go-tfe Workspaces,Runs,Variables,StateVersions > mock-go-tfe/mocks.go
+	mockgen -package mock_go_tfe github.com/hashicorp/go-tfe Workspaces,Runs,Variables,StateVersions > mock-go-tfe/mocks.go
 
 test: makemocks
 	#golangci-lint run
