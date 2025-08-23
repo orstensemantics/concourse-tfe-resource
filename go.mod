@@ -1,16 +1,16 @@
 module concourse-tfe-resource
 
-go 1.19
+go 1.23.0
 
 require (
 	github.com/drone/envsubst v1.0.3
 	github.com/hashicorp/go-tfe v1.64.2
-	go.uber.org/mock v0.4.0
+	go.uber.org/mock v0.6.0
 )
 
 require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
 )
 
 require (
