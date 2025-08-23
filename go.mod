@@ -1,10 +1,10 @@
 module concourse-tfe-resource
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/drone/envsubst v1.0.3
-	github.com/hashicorp/go-tfe v1.64.2
+	github.com/hashicorp/go-tfe v1.91.0
 	go.uber.org/mock v0.6.0
 )
 
@@ -16,9 +16,9 @@ require (
 require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
-	github.com/hashicorp/go-slug v0.15.2 // indirect
-	github.com/hashicorp/jsonapi v1.3.1 // indirect
-	golang.org/x/sys v0.24.0 // indirect
-	golang.org/x/time v0.6.0 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
+	github.com/hashicorp/go-slug v0.16.7 // indirect
+	github.com/hashicorp/jsonapi v1.4.3-0.20250220162346-81a76b606f3e // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/time v0.12.0 // indirect
 )
